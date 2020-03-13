@@ -25,10 +25,10 @@ from .log import logger_obj
 from .constant import SWITCH_OEM_MODEL,LIGHT_OEM_MODEL,HUMIDIFIER_OEM_MODEL,IRDEVICE_OEM_MODEL
 from .learnCode import learn_code,stop_learn
 from .sendCode import send_code
-
+from .judgeProcess import judgeprocess
 DOMAIN = 'infraed_huihe'
 DATA_INFREAD = 'data_infraed'
-
+processname="mode2"
 SIGNAL_DELETE_ENTITY = 'infraed_delete'
 SIGNAL_UPDATE_ENTITY = 'infraed_update'
 
@@ -58,27 +58,16 @@ SERVICE_CHANNEL_SCHEMA_BY_NAME= vol.Schema(
 )
 
 
-# CONFIG_SCHEMA = vol.Schema({
-#     DOMAIN: vol.Schema({
-#         vol.Required(CONF_PASSWORD): cv.string,
-#         vol.Required(CONF_USERNAME): cv.string,
-#         vol.Optional(CONF_PLATFORM, default='ifuturehome'): cv.string,
-#     })
-# }, extra=vol.ALLOW_EXTRA)
-# SERVICE_LEARNING_CODE
-
 
 SERVICE_ADD_NEW_DEVICE= vol.Schema({
     'device_name': str,
     'device_type': str,
-    'kfid': int,
+    vol.Optional('kfid', default=-1): int,
     'keylist': list
 })
 
-SERVICE_ADD_LEARNING_DEVICE= vol.Schema({
-    'device_name': str,
-    'device_type': str,
-    'keylist': list
+SERVICE_STAR_LEARNING_CODE= vol.Schema({
+vol.Optional('timeout', default=20): int
 })
 
 
@@ -212,15 +201,15 @@ def setup(hass, config):
     hass.services.register(DOMAIN, 'add_new_device', add_new_device, schema=SERVICE_ADD_NEW_DEVICE)
 
 
-    #OK
-    def add_learning_device(service):
-        """Handle the service call."""
-        params = service.data.copy()
-        params['kfid']=-1
-        device_list = infraed.add_new_device(params)
-        load_devices(device_list)
-    hass.services.register(DOMAIN, 'add_learning_device', add_learning_device, schema=SERVICE_ADD_LEARNING_DEVICE)
-
+    # #OK
+    # def add_learning_device(service):
+    #     """Handle the service call."""
+    #     params = service.data.copy()
+    #     params['kfid']=-1
+    #     device_list = infraed.add_new_device(params)
+    #     load_devices(device_list)
+    # hass.services.register(DOMAIN, 'add_learning_device', add_learning_device, schema=SERVICE_ADD_LEARNING_DEVICE)
+    #
 
     # OK
     def modify_device_code(service):
@@ -231,24 +220,33 @@ def setup(hass, config):
 
 
     # OK
-    def start_learning_code(call):
+    def start_learning_code(service):
         """Handle the service call."""
-        learnCode=learn_code()
-        sendDate={}
-        sendDate["irdate"]=str(learnCode)
-        print("--------------finish learning code-------------- ")
-
-        if learnCode==[]:
-            print("hass.bus.fire('send_learning_code_event', learnCode) is null")
+        if judgeprocess(processname) == True:
+            return False
         else:
-            try:
-                hass.bus.fire("send_learning_code_event", sendDate)
-            except:
-                print("hass.bus.fire('send_learning_code_event', learnCode) is erro")
-                pass
+            params = service.data.copy()
+            timeout = params["timeout"]
+
+            learnCode=learn_code(timeout)
+            sendDate={}
+
+            print("--------------finish learning code-------------- ")
+
+            if learnCode==[]:
+                print("hass.bus.fire('send_learning_code_event', learnCode) is null")
+            else:
+                try:
+                    strDate=','.join(learnCode)
+                    sendDate["irdata"] = strDate
+                    print("send_learning_code_event strDate:",sendDate)
+                    hass.bus.fire("send_learning_code_event", sendDate)
+                except:
+                    print("hass.bus.fire('send_learning_code_event', learnCode) is erro")
+                    pass
 
         return True
-    hass.services.register(DOMAIN, 'start_learning_code', start_learning_code)
+    hass.services.register(DOMAIN, 'start_learning_code', start_learning_code, schema=SERVICE_STAR_LEARNING_CODE)
 
 
     # OK
@@ -272,6 +270,7 @@ def setup(hass, config):
         send_code(code)
 
         print("--------------finish send_learning_code-------------- ")
+        return
     hass.services.register(DOMAIN, 'send_learning_code', send_learning_code, schema=SERVICE_SEND_LEARNING_CODE)
 
 
@@ -287,11 +286,8 @@ def setup(hass, config):
         hass.data[DOMAIN]['entities'].pop(entity_id)
 
         print("--------------finish delete_device-------------- ")
+        return
     hass.services.register(DOMAIN, 'delete_device', delete_device, schema=SERVICE_DELETE_DEVICE)
-
-
-
-
 
     return True
 
@@ -307,7 +303,7 @@ class InfraedDevice(Entity):
         self.infraed = infraed
 
 
-    async def async_added_to_hass(self):
+    def async_added_to_hass(self):
         """Call when entity is added to hass."""
         dev_id = self.infraed.object_id()
         self.hass.data[DOMAIN]['entities'][dev_id] = self.entity_id
@@ -320,20 +316,22 @@ class InfraedDevice(Entity):
     @property
     def object_id(self):
         """Return infraed device id."""
+        #print("object_id:", self.infraed.object_id())
         return self.infraed.object_id()
 
 
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return 'infraed.{}'.format(self.infraed.object_id())
+        unique_id='infraed.{}'.format(self.infraed.object_id())
+        #print("unique_id:",unique_id)
+        return unique_id
 
 
     @property
     def name(self):
         """Return infraed device name."""
 
-        print("self.infraed.name() ", self.infraed.name())
         return self.infraed.name()
 
 

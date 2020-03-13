@@ -28,7 +28,7 @@ device1={
  ]
 }
 
-device2={"entity_id":"light.infraed_1"}
+device2={"entity_id":"infraed#1"}
 #device_list = infraed.add_new_device(device1)
 device_list = infraed.device_control(1,"电源")
 #print("device_list:",device_list)

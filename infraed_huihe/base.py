@@ -89,8 +89,6 @@ class InfraedDevice(object):
 
 
     def name(self):
-
-        print("self.obj_name:::",self.obj_name)
         return self.obj_name
 
     def state(self):
@@ -108,7 +106,7 @@ class InfraedDevice(object):
         return self.keylist
 
     def object_id(self):
-        ID = 'infraed#{}'.format(self.obj_id)
+        ID = 'infraed_{}'.format(self.obj_id)
         return ID
 
     def available(self):
