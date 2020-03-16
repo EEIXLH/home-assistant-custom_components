@@ -56,6 +56,8 @@ class InfraedApi:
 
 
     def discover_devices(self):
+        SESSION.devices=[]
+        device_list=[]
         print("coming discover_devices")
         # 数据库文件是test.db
         # 如果文件不存在，会自动在当前目录创建:
@@ -142,8 +144,8 @@ class InfraedApi:
     def modify_device_code(self,device):
         print("modify_device_code:", device)
         endpointId = device["entity_id"]
-        key_id = device["key_id"]
-        irdata = device["irdata"]
+        key_id = str(device["key_id"])
+        irdata = device["pulse"]
         infraed_str="infraed_"
         num=endpointId.index(infraed_str)
         print("num:", num)
@@ -156,30 +158,28 @@ class InfraedApi:
         # 创建一个Cursor:
         cursor = conn.cursor()
         rows=selectCodeByEndpointId(cursor,device_id)
-        print("modify_device_info:",rows)
         modifyList=[]
         for row in rows:
             if row is not None:
-                print("row---row:", row)
                 if type(row[4]) == str:
                     keylist = row[4]
                 else:
                     keylist = row[4].decode('utf-8')
                 jsonList = eval(keylist)
                 i=0
-                for code in jsonList:
-                    if str(key_id) in code:
-                        i=i+1
-                        code[str(key_id)]=irdata
-                    modifyList.append(code)
+                for codeDate in jsonList:
+                    if key_id == codeDate['key_id']:
+                        print("key_id---:", key_id)
+                        i = i + 1
+                        codeDate['pulse'] = irdata
+                    modifyList.append(codeDate)
 
-
-                if i==0:
+                if i == 0:
                     print("no same key id")
-                    addcode={}
-                    addcode[str(key_id)] = irdata
+                    addcode = {}
+                    addcode["key_id"] = key_id
+                    addcode["pulse"] = irdata
                     modifyList.append(addcode)
-        print("modifyList:", modifyList)
         updateCodeListByEndpointId(cursor, str(modifyList).encode('utf-8'), device_id)
 
         cursor.close()
@@ -202,8 +202,7 @@ class InfraedApi:
                 return device
         return None
 
-
-    def get_code(self,endpointId,codeNme):
+    def get_code(self, endpointId, keyId):
         print("endpointId",endpointId)
         code=""
         codeList=[]
@@ -212,18 +211,15 @@ class InfraedApi:
         # 创建一个Cursor:
         cursor = conn.cursor()
         rows=selectCodeByEndpointId(cursor,endpointId)
-
         device_list = []
         for row in rows:
             if row is not None:
                 keylist = row[4].decode('utf-8')
                 jsonList = eval(keylist)
-                for code in jsonList:
-
-                    if codeNme in code:
-                        code = code[codeNme]
+                for codeDate in jsonList:
+                    if str(keyId) == codeDate['key_id']:
+                        code = codeDate['pulse']
                         codeList = code.split(",")
-                        print(":code", codeList)
 
         # 关闭Cursor:
         cursor.close()
@@ -234,11 +230,12 @@ class InfraedApi:
 
         return codeList
 
+    def device_control(self, device_id, keyId, param=None):
 
 
-    def device_control(self,endpointId, codeNme, param=None):
+        code=self.get_code(device_id,keyId)
 
-        code=self.get_code(endpointId,codeNme)
+        print("code:", code)
         if code !=[]:
             send_code(code)
         if param is None:

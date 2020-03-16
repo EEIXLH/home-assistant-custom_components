@@ -18,7 +18,7 @@ from homeassistant.components.light import (
     Light,
     DOMAIN
 )
-
+import time
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up Huihe light device."""
     if discovery_info is None:
@@ -73,8 +73,11 @@ class InfraedLight(InfraedDevice, Light):
     @property
     def is_on(self):
         """Return true if light is on."""
-        return True
-        # return self.infraed.state()
+        if self.infraed.state =="on":
+
+            return True
+        else:
+            return False
 
 
     @property
@@ -110,7 +113,9 @@ class InfraedLight(InfraedDevice, Light):
                 kwargs[ATTR_COLOR_TEMP])
             print("color_temp",color_temp)
             self.infraed.set_color_temp(color_temp)
-
+        time.sleep(2)
+        print("turn_on state:", self.state)
+        self.async_schedule_update_ha_state()
 
     def turn_off(self, **kwargs):
         """Instruct the light to turn off."""
@@ -118,7 +123,9 @@ class InfraedLight(InfraedDevice, Light):
         nowTime = datetime.datetime.now()
         logger_obj.warning("beging turn_on light time is"+str(nowTime))
         self.infraed.turn_off()
-
+        time.sleep(2)
+        print("turn_off state:", self.state)
+        self.async_schedule_update_ha_state()
 
     @property
     def supported_features(self):

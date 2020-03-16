@@ -1,8 +1,4 @@
 import psutil
-
-
-
-
 def judgeprocess(processname):
     pl = psutil.pids()
     for pid in pl:

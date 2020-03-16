@@ -62,24 +62,38 @@ SERVICE_CHANNEL_SCHEMA_BY_NAME= vol.Schema(
 SERVICE_ADD_NEW_DEVICE= vol.Schema({
     'device_name': str,
     'device_type': str,
-    vol.Optional('kfid', default=-1): int,
+    vol.Optional('kfid', default="-1"): str,
     'keylist': list
 })
+
 
 SERVICE_STAR_LEARNING_CODE= vol.Schema({
 vol.Optional('timeout', default=20): int
 })
 
+SERVICE_MODIFY_DEVICE_CODE= vol.Schema({
+    'device_name': str,
+    'device_type': str,
+    'keylist': list
+})
+
 
 SERVICE_SEND_LEARNING_CODE= vol.Schema({
-    'irdata': str
+    'pulse': str
 })
+
+
+SERVICE_CONTROLLING_DEVICE=vol.Schema({
+    'entity_id': str,
+    'action': str
+})
+
 
 
 SERVICE_MODIFY_DEVICE_CODE= vol.Schema({
     'entity_id': str,
     'key_id': int,
-    'irdata': str
+    'pulse': str
 })
 
 
@@ -134,7 +148,7 @@ def setup(hass, config):
 
         print("device_type_list:",device_type_list)
         for ha_type,dev_ids in device_type_list.items():
-            print("########3",dev_ids)
+            print("########4",dev_ids)
             discovery.load_platform(
                 hass, ha_type, DOMAIN, {'dev_ids': dev_ids}, config)
 
@@ -150,19 +164,22 @@ def setup(hass, config):
         newlist_ids = []
         oldlist_ids = []
         device_type_list = {}
+
+        entities = hass.data[DOMAIN]['entities']
+        print("entities--------------:", entities)
+
         for device in device_list:
             newlist_ids.append(device.object_id())
-        #logger_obj.warning("newlist_ids :" + str(newlist_ids))
+        logger_obj.warning("newlist_ids :" + str(newlist_ids))
         for dev_id in list(hass.data[DOMAIN]["entities"]):
             oldlist_ids.append(dev_id)
-        #logger_obj.warning("oldlist_ids :" + str(oldlist_ids))
+        logger_obj.warning("oldlist_ids :" + str(oldlist_ids))
 
         #logger_obj.info("poll_devices_update dev_id :" + str(dev_id))
         for dev_id in list(hass.data[DOMAIN]['entities']):
             if dev_id not in newlist_ids:
                 logger_obj.info("SIGNAL_DELETE_ENTITY ha_type,dev_id :" + str(dev_id) )
                 dispatcher_send(hass, SIGNAL_DELETE_ENTITY, dev_id)
-                infraed.delete_device(dev_id)
                 hass.data[DOMAIN]['entities'].pop(dev_id)
 
 
@@ -200,16 +217,32 @@ def setup(hass, config):
         load_devices(device_list)
     hass.services.register(DOMAIN, 'add_new_device', add_new_device, schema=SERVICE_ADD_NEW_DEVICE)
 
+    # OK？？
+    def controlling_device(service):
+        """Handle the service call."""
 
-    # #OK
-    # def add_learning_device(service):
-    #     """Handle the service call."""
-    #     params = service.data.copy()
-    #     params['kfid']=-1
-    #     device_list = infraed.add_new_device(params)
-    #     load_devices(device_list)
-    # hass.services.register(DOMAIN, 'add_learning_device', add_learning_device, schema=SERVICE_ADD_LEARNING_DEVICE)
-    #
+        params = service.data.copy()
+        endpointId = params['entity_id']
+        action = params['action']
+
+        keyId = 0
+        if action == "light.brightness_increase":
+            keyId = 2202
+        elif action == "light.brightness_decrease":
+            keyId = 2207
+        else:
+            pass
+        print("keyId:", keyId)
+        infraed_str = "infraed_"
+        num = endpointId.index(infraed_str)
+        print("num:", num)
+        number = num + 8
+        device_id = endpointId[number:]
+        print("device_id:", device_id)
+
+        infraed.device_control(device_id, keyId)
+
+    hass.services.register(DOMAIN, 'controlling_device', controlling_device, schema=SERVICE_CONTROLLING_DEVICE)
 
     # OK
     def modify_device_code(service):
@@ -228,18 +261,18 @@ def setup(hass, config):
             params = service.data.copy()
             timeout = params["timeout"]
 
-            learnCode=learn_code(timeout)
-            sendDate={}
+            learnCode = learn_code(timeout)
+            sendDate = {}
 
             print("--------------finish learning code-------------- ")
 
-            if learnCode==[]:
+            if learnCode == []:
                 print("hass.bus.fire('send_learning_code_event', learnCode) is null")
             else:
                 try:
-                    strDate=','.join(learnCode)
-                    sendDate["irdata"] = strDate
-                    print("send_learning_code_event strDate:",sendDate)
+                    strDate = ','.join(learnCode)
+                    sendDate["pulse"] = strDate
+                    print("send_learning_code_event strDate:", sendDate)
                     hass.bus.fire("send_learning_code_event", sendDate)
                 except:
                     print("hass.bus.fire('send_learning_code_event', learnCode) is erro")
@@ -265,12 +298,11 @@ def setup(hass, config):
 
         print("--------------beging send_learning_code-------------- ")
         params = service.data.copy()
-        codeList=params["irdata"]
+        codeList=params["pulse"]
         code=codeList.split(",")
         send_code(code)
 
         print("--------------finish send_learning_code-------------- ")
-        return
     hass.services.register(DOMAIN, 'send_learning_code', send_learning_code, schema=SERVICE_SEND_LEARNING_CODE)
 
 
@@ -281,12 +313,11 @@ def setup(hass, config):
         print("--------------beging delete_device-------------- ")
         params = service.data.copy()
         entity_id=params["entity_id"]
-        dispatcher_send(hass, SIGNAL_DELETE_ENTITY, entity_id)
         infraed.delete_device(entity_id)
+        dispatcher_send(hass, SIGNAL_DELETE_ENTITY, entity_id)
         hass.data[DOMAIN]['entities'].pop(entity_id)
 
         print("--------------finish delete_device-------------- ")
-        return
     hass.services.register(DOMAIN, 'delete_device', delete_device, schema=SERVICE_DELETE_DEVICE)
 
     return True
@@ -303,7 +334,7 @@ class InfraedDevice(Entity):
         self.infraed = infraed
 
 
-    def async_added_to_hass(self):
+    async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         dev_id = self.infraed.object_id()
         self.hass.data[DOMAIN]['entities'][dev_id] = self.entity_id
@@ -353,10 +384,10 @@ class InfraedDevice(Entity):
         False if entity pushes its state to HA.
         """
         return False
-        if self.infraed.get_oem_model() in IRDEVICE_OEM_MODEL:
-            return False
-        else:
-            return True
+        # if self.infraed.get_oem_model() in IRDEVICE_OEM_MODEL:
+        #     return False
+        # else:
+        #     return True
 
 
     @callback

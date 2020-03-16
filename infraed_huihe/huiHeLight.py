@@ -7,7 +7,7 @@ class HuiHeLight(InfraedDevice):
     def state(self):
         state = self.state
         if state is None:
-            return None
+            return True
         return state
 
 
@@ -75,11 +75,16 @@ class HuiHeLight(InfraedDevice):
 
     def turn_on(self):
 
-        self.api.device_control(self.obj_id,"电源")
+        self.api.device_control(self.obj_id,1)
+        self.state = "on"
+        return
 
 
     def turn_off(self):
-        self.api.device_control(self.obj_id, "电源")
+        self.api.device_control(self.obj_id,1)
+        self.state = "off"
+        return
+
 
 
     def set_brightness(self, brightness):
