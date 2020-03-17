@@ -25,7 +25,6 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         return
     infraed = hass.data[DATA_INFREAD]
     dev_ids = discovery_info.get('dev_ids')
-    print("infraed:",infraed)
     devices = []
     for dev_id in dev_ids:
         device = infraed.get_device_by_id(dev_id)

@@ -32,7 +32,6 @@ def read_code_file(processname):
         if "pulse" in key:
             pulse = list3.index(key)
         if pulse > space:
-            print("pulse-space=", pulse - space)
             num = pulse - space
             if pulse - space > 30:
                 list_slice = list3[(space + 1):pulse:1]
@@ -42,7 +41,6 @@ def read_code_file(processname):
         else:
             pass
 
-    print("space=", space)
     print("i=", i)
     print("enddddddd-pulse-space=", num)
 
@@ -91,7 +89,6 @@ def learn_code(timeout):
         print("waitTime:", waitTime)
         time.sleep(1)
         getList = read_code_file(processname)
-        print("get List====:", getList)
         if getList != []:
             learn_code = getList
             waitTime = timeout
@@ -105,8 +102,6 @@ def learn_code(timeout):
         os.system('pkill mode2')
         pass
 
-    # write_learn_code(learn_code)
-    # read_learn_file(newCode_file_name)
     print("finish learn_code ：", learn_code)
 
     return learn_code

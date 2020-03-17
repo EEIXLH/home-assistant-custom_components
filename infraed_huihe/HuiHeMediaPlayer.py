@@ -58,14 +58,10 @@ class HuiHeMediaPlayer(InfraedDevice):
 
     def state(self):
         """State of the player."""
-        return None
-
-
-    def name(self):
-        """Return the display name of this TV."""
-        subdeviceName = self.data.get('subdevice_name')
-        return subdeviceName
-
+        state = self.state
+        if state is None:
+            return True
+        return state
 
     def volume_level(self):
         """Volume level of the media player (0..1)."""
@@ -96,74 +92,26 @@ class HuiHeMediaPlayer(InfraedDevice):
     def power(self):
         """Turn the media player off."""
 
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
+        self.api.device_control(self.obj_id, 1)
 
-        with open(fm) as f_obj:
-            irdatas = json.load(f_obj)
-        irCodes = irdatas["keys"]
-
-        for code in irCodes:
-            if code["fkey"] == "power":
-                endpointId = self.data.get('dsn')
-                self.api.ir_control(endpointId, "ifracmd_to_dev", code)
-            else:
-                pass
+        return
 
 
     def volume_up(self):
         """Increase volume by one."""
+        self.api.device_control(self.obj_id, 50)
 
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-
-        with open(fm) as f_obj:
-            irdatas = json.load(f_obj)
-        irCodes = irdatas["keys"]
-
-        for code in irCodes:
-            if code["fkey"] == "volume_up":
-                endpointId = self.data.get('dsn')
-                self.api.ir_control(endpointId, "ifracmd_to_dev", code)
-            else:
-                pass
 
 
     def volume_down(self):
         """Decrease volume by one."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
 
-        with open(fm) as f_obj:
-            irdatas = json.load(f_obj)
-        irCodes = irdatas["keys"]
-
-        for code in irCodes:
-            if code["fkey"] == "volume_down":
-                endpointId = self.data.get('dsn')
-                self.api.ir_control(endpointId, "ifracmd_to_dev", code)
-            else:
-                pass
+        self.api.device_control(self.obj_id, 51)
 
 
     def mute_volume(self, mute):
         """Mute the volume."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-        with open(fm) as f_obj:
-            irdatas = json.load(f_obj)
-        irCodes = irdatas["keys"]
-
-        for code in irCodes:
-            if code["fkey"] == "mute_volume":
-                endpointId = self.data.get('dsn')
-                self.api.ir_control(endpointId, "ifracmd_to_dev", code)
-            else:
-                pass
+        self.api.device_control(self.obj_id, 106)
 
 
     def set_volume_level(self, volume):
@@ -173,41 +121,12 @@ class HuiHeMediaPlayer(InfraedDevice):
 
     def media_previous_track(self):
         """Send previous track command."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-
-        with open(fm) as f_obj:
-            irdatas = json.load(f_obj)
-        irCodes = irdatas["keys"]
-
-        for code in irCodes:
-            if code["fkey"] == "channel_down":
-                endpointId = self.data.get('dsn')
-                self.api.ir_control(endpointId, "ifracmd_to_dev", code)
-            else:
-                pass
-
-        keyID = '43'
+        self.api.device_control(self.obj_id, 44)
 
 
     def media_next_track(self):
         """Send next track command."""
-        keyID = '44'
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-
-        with open(fm) as f_obj:
-            irdatas = json.load(f_obj)
-        irCodes = irdatas["keys"]
-
-        for code in irCodes:
-            if code["fkey"] == "channel_up":
-                endpointId = self.data.get('dsn')
-                self.api.ir_control(endpointId, "ifracmd_to_dev", code)
-            else:
-                pass
+        self.api.device_control(self.obj_id, 43)
 
 
     def select_channel(self, command, type):

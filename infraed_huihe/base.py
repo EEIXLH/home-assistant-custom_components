@@ -1,5 +1,5 @@
 import time
-from .constant import SWITCH_OEM_MODEL,LIGHT_OEM_MODEL,HUMIDIFIER_OEM_MODEL,IRDEVICE_OEM_MODEL
+from .constant import SWITCH_MODEL,LIGHT_MODEL,CLIMATE_MODEL,MEDIA_PLAYER_MODEL
 import requests
 import json
 from .log import logger_obj
@@ -18,12 +18,14 @@ class InfraedDevice(object):
         self.keylist = device_info.get('keylist')
         self.state = "on"
 
-        if self.dev_type in SWITCH_OEM_MODEL:
+        if self.dev_type in SWITCH_MODEL:
                 self.obj_type = "switch"
-        elif self.dev_type in LIGHT_OEM_MODEL:
+        elif self.dev_type in LIGHT_MODEL:
                 self.obj_type = "light"
-        elif self.dev_type in HUMIDIFIER_OEM_MODEL:
+        elif self.dev_type in CLIMATE_MODEL:
                 self.obj_type = "climate"
+        elif self.dev_type in MEDIA_PLAYER_MODEL:
+            self.obj_type = "climate"
         else:
                 pass
 

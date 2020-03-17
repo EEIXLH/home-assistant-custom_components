@@ -22,7 +22,7 @@ from homeassistant.const import (
 )
 import datetime
 from .log import logger_obj
-from .constant import SWITCH_OEM_MODEL,LIGHT_OEM_MODEL,HUMIDIFIER_OEM_MODEL,IRDEVICE_OEM_MODEL
+from .constant import SWITCH_MODEL,LIGHT_MODEL,MEDIA_PLAYER_MODEL,MEDIA_PLAYER_MODEL
 from .learnCode import learn_code,stop_learn
 from .sendCode import send_code
 from .judgeProcess import judgeprocess
@@ -166,7 +166,6 @@ def setup(hass, config):
         device_type_list = {}
 
         entities = hass.data[DOMAIN]['entities']
-        print("entities--------------:", entities)
 
         for device in device_list:
             newlist_ids.append(device.object_id())

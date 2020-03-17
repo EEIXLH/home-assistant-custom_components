@@ -7,7 +7,7 @@ class HuiHeLight(InfraedDevice):
     def state(self):
         state = self.state
         if state is None:
-            return True
+            return "on"
         return state
 
 
