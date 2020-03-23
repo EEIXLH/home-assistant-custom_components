@@ -94,24 +94,24 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
             supports = supports | SUPPORT_TARGET_TEMPERATURE
         if self.infraed.support_target_temperature_range():
             supports = supports | SUPPORT_TARGET_TEMPERATURE_RANGE
-        if self.infraed.support_humidity():
-            supports = supports | SUPPORT_TARGET_HUMIDITY
+        # if self.infraed.support_humidity():
+        #     supports = supports | SUPPORT_TARGET_HUMIDITY
         if self.infraed.support_wind_speed():
             supports = supports | SUPPORT_FAN_MODE
-        if self.infraed.support_preset_modes():
-            supports = supports | SUPPORT_PRESET_MODE
+        # if self.infraed.support_preset_modes():
+        #     supports = supports | SUPPORT_PRESET_MODE
         return supports
 
 
     @property
     def state(self) -> str:
         """Return the current state."""
-        if self.infraed.state =="on":
-
-            return True
-        else:
-            return False
-        # return self.hvac_mode
+        # if self.infraed.state =="on":
+        #
+        #     return True
+        # else:
+        #     return False
+        return self.hvac_mode
 
 
     @property
@@ -151,23 +151,23 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         return list(HVAC_MAP)
 
 
-    @property
-    def preset_mode(self):
-        """Return hvac operation ie. heat, cool mode.
-        Need to be one of HVAC_MODE_*."""
+    # @property
+    # def preset_mode(self):
+    #     """Return hvac operation ie. heat, cool mode.
+    #     Need to be one of HVAC_MODE_*."""
+    #
+    #     current_preset_mode = self.infraed.preset_mode()
+    #     if current_preset_mode is None:
+    #         return None
+    #     return current_preset_mode
 
-        current_preset_mode = self.infraed.preset_mode()
-        if current_preset_mode is None:
-            return None
-        return current_preset_mode
 
-
-    @property
-    def preset_modes(self):
-        """Return the list of available hvac operation modes.
-        Need to be a subset of HUMIDI_MODE."""
-
-        return None
+    # @property
+    # def preset_modes(self):
+    #     """Return the list of available hvac operation modes.
+    #     Need to be a subset of HUMIDI_MODE."""
+    #
+    #     return None
 
 
     @property
@@ -202,23 +202,32 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         return self.infraed.target_temperature_step()
 
 
+    # @property
+    # def current_humidity(self):
+    #     """Return the current humidity."""
+    #     return self.infraed.current_humidity()
+    #
+    #
+    # @property
+    # def humidity(self):
+    #     """Return the current humidity."""
+    #     return self.infraed.target_humidity()
+    #
+    #
+    # @property
+    # def target_humidity(self):
+    #     """Return the humidity we try to reach."""
+    #     return self.infraed.target_humidity()
+
     @property
-    def current_humidity(self):
-        """Return the current humidity."""
-        return self.infraed.current_humidity()
-
-
-    @property
-    def humidity(self):
-        """Return the current humidity."""
-        return self.infraed.target_humidity()
-
+    def swing_mode(self):
+        """Return the fan setting."""
+        return self.infraed.current_swing_mode()
 
     @property
-    def target_humidity(self):
-        """Return the humidity we try to reach."""
-        return self.infraed.target_humidity()
-
+    def swing_modes(self):
+        """Return the list of available fan modes."""
+        return SUPPORT_SWING
 
     @property
     def fan_mode(self):
@@ -246,14 +255,26 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         self.async_schedule_update_ha_state()
 
 
-    def set_humidity(self, humidity):
-        """Set new target humidity."""
-        nowTime = datetime.datetime.now()
-        logger_obj.warning("beging set_humidity time is"+str(nowTime))
-        self.infraed.set_humidity(humidity)
-        time.sleep(1)
-        self.async_schedule_update_ha_state()
+    # def set_humidity(self, humidity):
+    #     """Set new target humidity."""
+    #     nowTime = datetime.datetime.now()
+    #     logger_obj.warning("beging set_humidity time is"+str(nowTime))
+    #     self.infraed.set_humidity(humidity)
+    #     time.sleep(1)
+    #     self.async_schedule_update_ha_state()
 
+
+    def set_swing_mode(self, swing_mode):
+        """Set new target swing operation."""
+        nowTime = datetime.datetime.now()
+        logger_obj.warning("beging set_fan_mode time is" + str(nowTime))
+        if self.infraed.state() == True:
+            self.infraed.set_swing_mode(swing_mode)
+        elif self.infraed.state() == False:
+            logger_obj.warning("CLIMATE IS " + str(self.infraed.state()) + ",set_swing_mode IS " + str(swing_mode))
+        time.sleep(1)
+
+        self.async_schedule_update_ha_state()
 
     def set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
@@ -272,7 +293,7 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         """Set new target hvac mode."""
         nowTime = datetime.datetime.now()
         logger_obj.warning("beging set_hvac_mode time is"+str(nowTime))
-        if self.infraed.state() == True:
+        if self.infraed.state() == "on":
                 if hvac_mode == HVAC_MODE_OFF:
                     self.infraed.turn_off()
                 elif hvac_mode == HVAC_MODE_AUTO:
@@ -291,20 +312,20 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         self.async_schedule_update_ha_state()
 
 
-    def set_timer(self, command,dev_type):
-        nowTime = datetime.datetime.now()
-        logger_obj.warning("beging set_timer time is"+str(nowTime))
-        self.infraed.set_timer(command,dev_type)
-        time.sleep(1)
-        self.async_schedule_update_ha_state()
+    # def set_timer(self, command,dev_type):
+    #     nowTime = datetime.datetime.now()
+    #     logger_obj.warning("beging set_timer time is"+str(nowTime))
+    #     self.infraed.set_timer(command,dev_type)
+    #     time.sleep(1)
+    #     self.async_schedule_update_ha_state()
 
-    def set_preset_mode(self, preset_mode):
-        """Set new target preset mode."""
-        nowTime = datetime.datetime.now()
-        logger_obj.warning("beging set_preset_mode time is"+str(nowTime))
-        self.infraed.set_preset_mode(preset_mode)
-        time.sleep(1)
-        self.async_schedule_update_ha_state()
+    # def set_preset_mode(self, preset_mode):
+    #     """Set new target preset mode."""
+    #     nowTime = datetime.datetime.now()
+    #     logger_obj.warning("beging set_preset_mode time is"+str(nowTime))
+    #     self.infraed.set_preset_mode(preset_mode)
+    #     time.sleep(1)
+    #     self.async_schedule_update_ha_state()
 
 
     @property
@@ -319,14 +340,14 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         return self.infraed.max_temp()
 
 
-    @property
-    def min_humidity(self):
-        """Return the minimum humidity."""
-        return self.infraed.min_humidity()
-
-
-    @property
-    def max_humidity(self):
-        """Return the maximum humidity."""
-        return self.infraed.max_humidity()
+    # @property
+    # def min_humidity(self):
+    #     """Return the minimum humidity."""
+    #     return self.infraed.min_humidity()
+    #
+    #
+    # @property
+    # def max_humidity(self):
+    #     """Return the maximum humidity."""
+    #     return self.infraed.max_humidity()
 

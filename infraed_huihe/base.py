@@ -10,6 +10,7 @@ class InfraedDevice(object):
     def __init__(self, device_info, api):
 
         self.api = api
+        self.data = {}
         self.device_info = device_info
         self.obj_name = device_info.get('device_name')
         self.obj_id = device_info.get('device_id')
@@ -26,6 +27,11 @@ class InfraedDevice(object):
                 self.obj_type = "climate"
         elif self.dev_type in MEDIA_PLAYER_MODEL:
             self.obj_type = "climate"
+            self.data["modelType"] = 2
+            self.data["curTmp"] = 26
+            self.data["curWindSpeed"] =0
+            self.data["swing"] =0
+
         else:
                 pass
 
