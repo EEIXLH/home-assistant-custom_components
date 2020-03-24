@@ -142,16 +142,19 @@ class InfraedApi:
 
 
     def modify_device_code(self,device):
-        print("modify_device_code:", device)
-        endpointId = device["entity_id"]
+        endpointId = str(device["entity_id"])
         key_id = str(device["key_id"])
         irdata = device["pulse"]
         infraed_str="infraed_"
-        num=endpointId.index(infraed_str)
-        print("num:", num)
-        number=num+8
-        device_id=endpointId[number:]
-        print("device_id:",device_id)
+        if infraed_str in endpointId:
+            num=endpointId.index(infraed_str)
+            print("num:", num)
+            number = num + 8
+            device_id = endpointId[number:]
+
+        else:
+            device_id=endpointId
+        print("device_id:", device_id)
 
         conn = sqlite3.connect(db_path)
         conn.text_factory = str
@@ -162,6 +165,7 @@ class InfraedApi:
         for row in rows:
             if row is not None:
                 if type(row[4]) == str:
+
                     keylist = row[4]
                 else:
                     keylist = row[4].decode('utf-8')
@@ -214,21 +218,13 @@ class InfraedApi:
         device_list = []
         for row in rows:
             if row is not None:
-                devicetType = row[2]
                 kfid = row[3]
                 keylist = row[4].decode('utf-8')
                 jsonList = eval(keylist)
-                if devicetType != "ac":
-                    for codeDate in jsonList:
-                        if str(keyId) == codeDate['key_id']:
-                            code = codeDate['pulse']
-                            codeList = code.split(",")
-                else:
-                    for codeDate in jsonList:
-                        if str(keyId) == codeDate['par']:
-                            code = codeDate['pulse']
-                            codeList = code.split(",")
-
+                for codeDate in jsonList:
+                    if str(keyId) == codeDate['key_id']:
+                        code = codeDate['pulse']
+                        codeList = code.split(",")
         # 关闭Cursor:
         cursor.close()
         # 提交事务:
@@ -240,136 +236,101 @@ class InfraedApi:
 
     def device_control(self, device_id, keyId, param=None):
 
+        sendResponse = -1
+        code,kfid=self.get_code(device_id,keyId)
 
-        code=self.get_code(device_id,keyId)
-
-        print("code:", code)
+        print("device_control code:", code)
         if code !=[]:
-            send_code(code)
-        if param is None:
-            param = {}
-        nowTime = datetime.datetime.now()
-        logger_obj.warning("beging control device time is"+str(nowTime))
+            sendResponse=send_code(code)
+        # if param is None:
+        #     param = {}
+        # nowTime = datetime.datetime.now()
+        # logger_obj.warning("beging control device time is"+str(nowTime))
 
-        return ""
+        if sendResponse == True:
 
+            return True
+        else:
 
-
-    def get_ac_code(self, endpointId, acValue):
-        print("endpointId",endpointId)
-        code=""
-        codeList=[]
-        conn = sqlite3.connect(db_path)
-        conn.text_factory = str
-        # 创建一个Cursor:
-        cursor = conn.cursor()
-        rows=selectCodeByEndpointId(cursor,endpointId)
-        device_list = []
-        for row in rows:
-            if row is not None:
-                kfid= row[3]
-                keylist = row[4].decode('utf-8')
-                jsonList = eval(keylist)
-                if kfid==-1:
-                    for codeDate in jsonList:
-                        if str(acValue) == codeDate['key_id']:
-                            code = codeDate['pulse']
-                            codeList = code.split(",")
-                else:
-                    for codeDate in jsonList:
-                        if str(acValue) == codeDate['par']:
-                            code = codeDate['pulse']
-                            codeList = code.split(",")
-
-        # 关闭Cursor:
-        cursor.close()
-        # 提交事务:
-        conn.commit()
-        # 关闭Connection:
-        conn.close()
-
-        return codeList,kfid
+            return False
 
 
+    # def get_ac_code(self, endpointId, acValue):
+    #     print("endpointId",endpointId)
+    #     code=""
+    #     codeList=[]
+    #     conn = sqlite3.connect(db_path)
+    #     conn.text_factory = str
+    #     # 创建一个Cursor:
+    #     cursor = conn.cursor()
+    #     rows=selectCodeByEndpointId(cursor,endpointId)
+    #     device_list = []
+    #     for row in rows:
+    #         if row is not None:
+    #             kfid= row[3]
+    #             keylist = row[4].decode('utf-8')
+    #             jsonList = eval(keylist)
+    #             if kfid==-1:
+    #                 for codeDate in jsonList:
+    #                     if str(acValue) == codeDate['key_id']:
+    #                         code = codeDate['pulse']
+    #                         codeList = code.split(",")
+    #             else:
+    #                 for codeDate in jsonList:
+    #                     if str(acValue) == codeDate['par']:
+    #                         code = codeDate['pulse']
+    #                         codeList = code.split(",")
+    #
+    #     # 关闭Cursor:
+    #     cursor.close()
+    #     # 提交事务:
+    #     conn.commit()
+    #     # 关闭Connection:
+    #     conn.close()
+    #
+    #     return codeList,kfid
 
-    def modify_ac_code(self,device):
-        print("modify_device_code:", device)
-        endpointId = device["entity_id"]
-        par = str(device["par"])
-        irdata = device["pulse"]
-        infraed_str="infraed_"
-        num=endpointId.index(infraed_str)
-        print("num:", num)
-        number=num+8
-        device_id=endpointId[number:]
-        print("device_id:",device_id)
 
-        conn = sqlite3.connect(db_path)
-        conn.text_factory = str
-        # 创建一个Cursor:
-        cursor = conn.cursor()
-        rows=selectCodeByEndpointId(cursor,device_id)
-        modifyList=[]
-        for row in rows:
-            if row is not None:
-                if type(row[4]) == str:
-                    keylist = row[4]
-                else:
-                    keylist = row[4].decode('utf-8')
-                jsonList = eval(keylist)
-                i=0
-                for codeDate in jsonList:
-                    if par == codeDate["par"]:
-                        print("par---:", par)
-                        i = i + 1
-                        codeDate["par"] = irdata
-                    modifyList.append(codeDate)
-
-                if i == 0:
-                    print("no same par ")
-                    addcode = {}
-                    addcode["par"] = par
-                    addcode["pulse"] = irdata
-                    modifyList.append(addcode)
-        updateCodeListByEndpointId(cursor, str(modifyList).encode('utf-8'), device_id)
-
-        cursor.close()
-        # 提交事务:
-        conn.commit()
-        # 关闭Connection:
-        conn.close()
-
-        self.discover_devices()
-        return SESSION.devices
 
 
     def ac_control(self, device_id, acValue):
-
+        print("ac_control acValue:",acValue)
+        sendResponse=-1
         device={}
-        code,kfid=self.get_ac_code(device_id,acValue)
-        if kfid==-1:
+        code,kfid=self.get_code(device_id,acValue)
+        print("kfidkfidkfidkfid:",kfid)
+        if kfid=="-1":
             if code != []:
-                send_code(code)
+                sendResponse=send_code(code)
             else:
                 return False
         else:
             device["entity_id"]=device_id
-            device["par"]=acValue
+            device["key_id"]=acValue
 
             if code !=[]:
-                send_code(code)
+                sendResponse=send_code(code)
             else:
-                code=get_servers_ac_code(code,kfid)
+                print("先假定收到了码库为:'354,1046,354' ")
+                #先假定收到了码库为:'354,1046,354'
+                #code=get_servers_ac_code(code,kfid)
+                code='354,1046,354'
+
                 if code!=None:
-                    send_code(code)
+                    codeList = code.split(",")
+                    sendResponse=send_code(codeList)
                     device["pulse"]=code
-                    self.modify_ac_code(device)
+                    self.modify_device_code(device)
                 else:
                     return False
 
+        if sendResponse == True:
 
+            return True
+        else:
 
-        return True
+            return False
+
 
 
 

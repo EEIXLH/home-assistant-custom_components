@@ -92,7 +92,7 @@ SERVICE_CONTROLLING_DEVICE=vol.Schema({
 
 SERVICE_MODIFY_DEVICE_CODE= vol.Schema({
     'entity_id': str,
-    'key_id': int,
+    'key_id': str,
     'pulse': str
 })
 
@@ -238,8 +238,12 @@ def setup(hass, config):
         number = num + 8
         device_id = endpointId[number:]
         print("device_id:", device_id)
-
-        infraed.device_control(device_id, keyId)
+        #更新对应的设备属性暂未实现
+        # sendResponse=infraed.device_control(device_id, keyId)
+        # if sendResponse == True:
+        #     self.state = "off"
+        #
+        # return
 
     hass.services.register(DOMAIN, 'controlling_device', controlling_device, schema=SERVICE_CONTROLLING_DEVICE)
 

@@ -25,12 +25,13 @@ class InfraedDevice(object):
                 self.obj_type = "light"
         elif self.dev_type in CLIMATE_MODEL:
                 self.obj_type = "climate"
+                self.data["modelType"] = 2
+                self.data["curTmp"] = 26
+                self.data["curWindSpeed"] = 0
+                self.data["swing"] = 0
         elif self.dev_type in MEDIA_PLAYER_MODEL:
-            self.obj_type = "climate"
-            self.data["modelType"] = 2
-            self.data["curTmp"] = 26
-            self.data["curWindSpeed"] =0
-            self.data["swing"] =0
+            self.obj_type = "media_player"
+
 
         else:
                 pass

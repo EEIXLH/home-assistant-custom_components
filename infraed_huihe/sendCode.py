@@ -35,29 +35,39 @@ def write_code_config(remoteName, buttonNameKey, codeList):
 
 def send_code(codeList):
     print("coming send_code ")
+    print("codeList: ",codeList)
     remoteName = 'demo'
     buttonNameKey = "on"
+    sendResponse=0
     write_code_config(remoteName, buttonNameKey, codeList)
     restartResponse = os.system('sudo service lircd restart')
     print("restartResponse:", restartResponse)
     if restartResponse != 0:
-        return "send failed"
+        print("sudo service lircd restart is erro")
+        return False
     else:
         time.sleep(0.3)
 
         try:
             # sendResponse=os.system('irsend SEND_ONCE demo on')
-            sendResponse = irsend.send_once(remoteName, [buttonNameKey])
-            print("sendResponse1:", sendResponse)
-
+            irsend.send_once(remoteName, [buttonNameKey])
 
         except:
-            os.system('sudo service lircd restart')
-            time.sleep(0.5)
-            # sendResponse = os.system('irsend SEND_ONCE demo on')
+            try:
+                os.system('sudo service lircd restart')
+                time.sleep(0.5)
+                # sendResponse = os.system('irsend SEND_ONCE demo on')
+                irsend.send_once(remoteName, [buttonNameKey])
+            except:
 
-            sendResponse = irsend.send_once(remoteName, [buttonNameKey])
-            print("sendResponse2:", sendResponse)
+                print("send_code is erro")
+                return False
 
-    return "send succeed"
 
+    if sendResponse==0:
+
+
+        return True
+    else:
+
+        return False

@@ -75,21 +75,23 @@ class HuiHeLight(InfraedDevice):
 
     def turn_on(self):
 
-        self.api.device_control(self.obj_id,1)
-        self.state = "on"
+        sendResponse=self.api.device_control(self.obj_id,1)
+        if sendResponse == True:
+            self.state = "on"
+
         return
 
-
     def turn_off(self):
-        self.api.device_control(self.obj_id,1)
-        self.state = "off"
+        sendResponse=self.api.device_control(self.obj_id,1)
+        if sendResponse == True:
+            self.state = "off"
+
         return
 
 
 
     def set_brightness(self, brightness):
         """Set the brightness(0-255) of light."""
-
         pass
         #value = int(brightness * 100 / 255)
         #self.api.device_control(self.obj_id, 'brightness', value)
