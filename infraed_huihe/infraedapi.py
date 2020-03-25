@@ -22,7 +22,7 @@ REFRESHTIME = 60 * 60 * 12
 from .log import logger_obj
 from .deviceDB import createTable,insertOneDevice,selectAll,selectCodeByEndpointId,deleteOneDevice,updateCodeListByEndpointId
 from .sendCode import send_code
-db_path = 'irdevices.db'
+db_path = '.homeassistant/irdevices.db'
 
 
 class HuiHeSession:

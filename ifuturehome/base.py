@@ -5,7 +5,7 @@ import json
 from .log import logger_obj
 import datetime
 import time
-
+FILENAME=".homeassistant/irdata_id.json"
 class HuiheDevice(object):
     def __init__(self, data, api):
         self.api = api
@@ -36,18 +36,14 @@ class HuiheDevice(object):
                 self.data["mode_list"] = acData.get("mode_list")
                 irdatas,code=self.api.getIrCode(irdata_id)
                 if code == 200 or code == 201:
-                    filename = "{irdata_id}.json"
-                    fm=filename.format(irdata_id=irdata_id)
-                    with open(fm, 'w') as file_obj:json.dump(irdatas, file_obj)
+                    with open(FILENAME, 'w') as file_obj:json.dump(irdatas, file_obj)
                 else:
                     pass
             else:
                 self.data["state"] =None
                 irdatas,code = self.api.getIrCode(irdata_id)
                 if code == 200 or code == 201:
-                    filename = "{irdata_id}.json"
-                    fm = filename.format(irdata_id=irdata_id)
-                    with open(fm, 'w') as file_obj:
+                    with open(FILENAME, 'w') as file_obj:
                         json.dump(irdatas, file_obj)
                     pass
                 else:

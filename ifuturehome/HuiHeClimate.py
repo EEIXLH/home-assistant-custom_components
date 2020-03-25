@@ -10,7 +10,7 @@ from .constant import TYPE_HUMI_023,TYPE_HUMI_019
 import json
 _LOGGER = logging.getLogger(__name__)
 from .log import logger_obj
-
+FILENAME=".homeassistant/irdata_id.json"
 
 
 class HuiHeClimate(HuiheDevice):
@@ -233,10 +233,7 @@ class HuiHeClimate(HuiheDevice):
 
     def set_temperature(self, temperature):
         """Set new target temperature."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
 
         if self.data["state"] == True:
@@ -277,9 +274,7 @@ class HuiHeClimate(HuiheDevice):
         print("fan_mode", fan_mode)
         value=""
         irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         if fan_mode == 'auto':
             value = 0
@@ -310,11 +305,7 @@ class HuiHeClimate(HuiheDevice):
         """Set new target operation mode."""
 
         endpointId = self.data.get('dsn')
-        irdata_id=self.data.get('irdata_id')
-
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         if hvac_mode=='off':
 
@@ -411,10 +402,7 @@ class HuiHeClimate(HuiheDevice):
             self.api.device_control(self.obj_id,"switch", '1')
         elif self.data.get('oem_model') in IRDEVICE_OEM_MODEL:
 
-            irdata_id = self.data.get('irdata_id')
-            filename = "{irdata_id}.json"
-            fm = filename.format(irdata_id=irdata_id)
-            with open(fm) as f_obj:
+            with open(FILENAME) as f_obj:
                 irdatas = json.load(f_obj)
             irCodes = irdatas["keys"]
             current_temperature = self.data["mode_list"].get('curTmp')
@@ -440,11 +428,8 @@ class HuiHeClimate(HuiheDevice):
 
         elif self.data.get('oem_model') in IRDEVICE_OEM_MODEL:
 
-            irdata_id = self.data.get('irdata_id')
-            filename = "{irdata_id}.json"
-            fm = filename.format(irdata_id=irdata_id)
 
-            with open(fm) as f_obj:
+            with open(FILENAME) as f_obj:
                 irdatas = json.load(f_obj)
             irCodes=irdatas["keys"]
 

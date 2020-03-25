@@ -51,7 +51,7 @@ ATTR_TO_PROPERTY = [
 CACHE_IMAGES = 'images'
 CACHE_MAXSIZE = 'maxsize'
 CACHE_LOCK = 'lock'
-
+FILENAME=".homeassistant/irdata_id.json"
 
 class HuiHeMediaPlayer(HuiheDevice):
 
@@ -96,11 +96,7 @@ class HuiHeMediaPlayer(HuiheDevice):
     def power(self):
         """Turn the media player off."""
 
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         irCodes = irdatas["keys"]
 
@@ -115,11 +111,8 @@ class HuiHeMediaPlayer(HuiheDevice):
     def volume_up(self):
         """Increase volume by one."""
 
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
 
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         irCodes = irdatas["keys"]
 
@@ -133,11 +126,7 @@ class HuiHeMediaPlayer(HuiheDevice):
 
     def volume_down(self):
         """Decrease volume by one."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         irCodes = irdatas["keys"]
 
@@ -151,10 +140,7 @@ class HuiHeMediaPlayer(HuiheDevice):
 
     def mute_volume(self, mute):
         """Mute the volume."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         irCodes = irdatas["keys"]
 
@@ -173,11 +159,8 @@ class HuiHeMediaPlayer(HuiheDevice):
 
     def media_previous_track(self):
         """Send previous track command."""
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
 
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         irCodes = irdatas["keys"]
 
@@ -194,11 +177,7 @@ class HuiHeMediaPlayer(HuiheDevice):
     def media_next_track(self):
         """Send next track command."""
         keyID = '44'
-        irdata_id = self.data.get('irdata_id')
-        filename = "{irdata_id}.json"
-        fm = filename.format(irdata_id=irdata_id)
-
-        with open(fm) as f_obj:
+        with open(FILENAME) as f_obj:
             irdatas = json.load(f_obj)
         irCodes = irdatas["keys"]
 

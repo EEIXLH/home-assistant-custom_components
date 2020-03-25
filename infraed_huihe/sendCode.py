@@ -2,7 +2,7 @@ import os, sys, stat, time
 from shutil import copyfile
 from py_irsend import irsend
 
-filesPath = 'demo.lircd.conf'
+filesPath = '.homeassistant/demo.lircd.conf'
 copyCMD = ""
 
 
