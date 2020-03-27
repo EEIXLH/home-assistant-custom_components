@@ -172,6 +172,7 @@ class iFutureHomeApi:
 
 
     def get_device_by_id(self, dev_id):
+        print("SESSION.devices:",SESSION.devices)
         for device in SESSION.devices:
             if device.object_id() == dev_id:
                 return device

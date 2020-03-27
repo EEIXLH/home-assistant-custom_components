@@ -131,24 +131,20 @@ def setup(hass, config):
 
     def load_devices(device_list):
         """Load new devices by device_list."""
-        print("########1", device_list)
+        #print("########1", device_list)
         device_type_list = {}
         for device in device_list:
 
             dev_type = device.device_type()
-            print("########2", dev_type)
 
             if (dev_type in INFREAD_TYPE_TO_HA.keys() and  device.object_id() not in hass.data[DOMAIN]['entities']):
                 ha_type = INFREAD_TYPE_TO_HA[dev_type]
-                print("########3", ha_type)
                 if ha_type not in device_type_list:
                     device_type_list[ha_type] = []
                 device_type_list[ha_type].append(device.object_id())
                 hass.data[DOMAIN]['entities'][device.object_id()] = None
 
-        print("device_type_list:",device_type_list)
         for ha_type,dev_ids in device_type_list.items():
-            print("########4",dev_ids)
             discovery.load_platform(
                 hass, ha_type, DOMAIN, {'dev_ids': dev_ids}, config)
 
@@ -169,10 +165,10 @@ def setup(hass, config):
 
         for device in device_list:
             newlist_ids.append(device.object_id())
-        logger_obj.warning("newlist_ids :" + str(newlist_ids))
+        # logger_obj.warning("newlist_ids :" + str(newlist_ids))
         for dev_id in list(hass.data[DOMAIN]["entities"]):
             oldlist_ids.append(dev_id)
-        logger_obj.warning("oldlist_ids :" + str(oldlist_ids))
+        # logger_obj.warning("oldlist_ids :" + str(oldlist_ids))
 
         #logger_obj.info("poll_devices_update dev_id :" + str(dev_id))
         for dev_id in list(hass.data[DOMAIN]['entities']):
@@ -377,7 +373,7 @@ class InfraedDevice(Entity):
 
     def update(self):
         """Refresh infraed device data."""
-        self.infraed.update()
+        return self.infraed.update()
 
 
     @property

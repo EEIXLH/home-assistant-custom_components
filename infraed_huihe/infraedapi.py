@@ -58,7 +58,7 @@ class InfraedApi:
     def discover_devices(self):
         SESSION.devices=[]
         device_list=[]
-        print("coming discover_devices")
+        # print("coming discover_devices")
         # 数据库文件是test.db
         # 如果文件不存在，会自动在当前目录创建:
         conn = sqlite3.connect(db_path)

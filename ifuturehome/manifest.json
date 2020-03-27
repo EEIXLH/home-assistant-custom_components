@@ -1,6 +1,7 @@
 {
   "domain": "ifuturehome",
   "name": "HuiHe",
+  "config_flow": true,
   "documentation": "",
   "dependencies": [],
   "codeowners": [],

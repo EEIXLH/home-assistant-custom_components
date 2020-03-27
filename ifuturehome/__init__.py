@@ -4,32 +4,26 @@ from .log import get_logger
 import voluptuous as vol
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
-from homeassistant.const import (CONF_USERNAME, CONF_PASSWORD, CONF_PLATFORM)
-from homeassistant.helpers import discovery
-from homeassistant.helpers.dispatcher import (
-    dispatcher_send, async_dispatcher_connect)
+from homeassistant.const import (CONF_USERNAME, CONF_PASSWORD, )
+from homeassistant.helpers.dispatcher import ( async_dispatcher_connect)
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.event import track_time_interval
 from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_COMMAND,
-    CONF_FRIENDLY_NAME,
-    CONF_HOST,
-    CONF_MAC,
-    CONF_SWITCHES,
-    CONF_TIMEOUT,
-    CONF_TYPE,
-    STATE_ON,
 )
-import datetime
 from .log import logger_obj
 from .constant import SWITCH_OEM_MODEL,LIGHT_OEM_MODEL,HUMIDIFIER_OEM_MODEL,IRDEVICE_OEM_MODEL
-
-
-
+from .iFutureHomeapi import iFutureHomeApi
+from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.dispatcher import async_dispatcher_send
+# 缓存监听者
+DATA_HUIHE_DISPATCHERS = "huihe_dispatchers"
+DATA_HUIHE_TIMER = "huihe_timer"
 DOMAIN = 'ifuturehome'
 DATA_HUIHE = 'data_huihe'
-
+DATA_HUIHE_API = "data_huihe_api"
+# 新设备通知
+HUIHE_DISCOVERY_NEW = "huihe_discovery_new_{}"
 SIGNAL_DELETE_ENTITY = 'huihe_delete'
 SIGNAL_UPDATE_ENTITY = 'huihe_update'
 
@@ -38,6 +32,10 @@ SERVICE_PULL_DEVICES = 'pull_devices'
 
 HUMIDITY_TYPE = ['0001-0401-0001','0001-0401-0002']
 
+
+# 缓存监听者
+DATA_HUIHE_DISPATCHERS = "huihe_dispatchers"
+DATA_HUIHE_TIMER = "huihe_timer"
 
 HUIHE_TYPE_TO_HA = {
     '0001-0201-0001': 'light',
@@ -50,11 +48,12 @@ HUIHE_TYPE_TO_HA = {
     'tv':'media_player',
 }
 
+HUIHE_TYPE = ['light','switch' ,'climate' ,'media_player']
+
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Optional(CONF_PLATFORM, default='ifuturehome'): cv.string,
+        vol.Required(CONF_USERNAME): cv.string
     })
 }, extra=vol.ALLOW_EXTRA)
 
@@ -83,39 +82,65 @@ SERVICE_TIMER= vol.Schema(
 def setup(hass, config):
     """Set up ifuturehome Component."""
     logger_obj.info("beging setup ifuturehome")
-    from .iFutureHomeapi import iFutureHomeApi
+    hass.data[DOMAIN] = {'entities': {}}
+    hass.data[DATA_HUIHE] = {}
+    return True
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.typing import ConfigType, HomeAssistantType
+
+async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     huihe = iFutureHomeApi()
-    username = config[DOMAIN][CONF_USERNAME]
-    password = config[DOMAIN][CONF_PASSWORD]
-    platform = config[DOMAIN][CONF_PLATFORM]
-    hass.data[DATA_HUIHE] = huihe
-    huihe.init(username, password, platform)
-    hass.data[DOMAIN] = {
-        'entities': {}
+    config = CONFIG_SCHEMA(entry.data)
+    username = config[CONF_USERNAME]
+    password = config[CONF_PASSWORD]
+    # hass.data[DATA_HUIHE] = huihe
+    hass.data[DATA_HUIHE][entry.entry_id] = {
+        DATA_HUIHE_API: huihe,
+        DATA_HUIHE_DISPATCHERS: []
     }
 
+    huihe.init(username, password)
+    hass.data[DOMAIN]["entities"].update({entry.entry_id: {}})
+    hass.data[DOMAIN]["entities"][entry.entry_id]["devices"] = []
 
-    def load_devices(device_list):
+    async def load_devices(device_list):
         """Load new devices by device_list."""
+
+
+        print("load_devices device_type_list:",device_list)
+        print("devices:", hass.data[DOMAIN]['entities'][entry.entry_id]["devices"])
         device_type_list = {}
         for device in device_list:
             dev_type = device.device_type()
-            if (dev_type in HUIHE_TYPE_TO_HA.keys() and  device.object_id() not in hass.data[DOMAIN]['entities']):
+
+            if (dev_type in HUIHE_TYPE_TO_HA.keys() and  device.object_id() not in hass.data[DOMAIN]['entities'][entry.entry_id]["devices"]):
                 ha_type = HUIHE_TYPE_TO_HA[dev_type]
+                hass.data[DOMAIN]["entities"][entry.entry_id]["devices"].append(device.object_id())
                 if ha_type not in device_type_list:
                     device_type_list[ha_type] = []
                 device_type_list[ha_type].append(device.object_id())
-                hass.data[DOMAIN]['entities'][device.object_id()] = None
+        hass.data[DOMAIN]["entities"][entry.entry_id].update({"new_devices": {}})
+
+
         for ha_type,dev_ids in device_type_list.items():
-            discovery.load_platform(
-                hass, ha_type, DOMAIN, {'dev_ids': dev_ids}, config)
+            print("dev_ids？？？？:", dev_ids)
+            print("ha_type？？？？:", ha_type)
+            hass.data[DOMAIN]["entities"][entry.entry_id]["new_devices"][ha_type] = dev_ids
 
 
     device_list = huihe.get_all_devices()
-    load_devices(device_list)
+    await load_devices(device_list)
 
 
-    def poll_devices_update(event_time):
+    for ha_type in HUIHE_TYPE:
+        print("entry-----:", entry)
+        print("ha_type-----:", ha_type)
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, ha_type)
+        )
+
+    async def poll_devices_update(event_time):
         """Check if accesstoken is expired and pull device list from server."""
         huihe.poll_devices_update()
         device_list = huihe.get_all_devices()
@@ -126,46 +151,45 @@ def setup(hass, config):
         for device in device_list:
             newlist_ids.append(device.object_id())
         # logger_obj.warning("newlist_ids :" + str(newlist_ids))
-        for dev_id in list(hass.data[DOMAIN]["entities"]):
+        for dev_id in list(hass.data[DOMAIN]["entities"][entry.entry_id]["devices"]):
             oldlist_ids.append(dev_id)
         # logger_obj.warning("oldlist_ids :" + str(oldlist_ids))
 
-        for dev_id in list(hass.data[DOMAIN]['entities']):
+        for dev_id in list(hass.data[DOMAIN]['entities'][entry.entry_id]["devices"]):
             if dev_id not in newlist_ids:
                 logger_obj.info("SIGNAL_DELETE_ENTITY ha_type,dev_id :" + str(dev_id) )
-                dispatcher_send(hass, SIGNAL_DELETE_ENTITY, dev_id)
-                hass.data[DOMAIN]['entities'].pop(dev_id)
+                hass.data[DOMAIN]["entities"][entry.entry_id]["devices"].remove(dev_id)
+                async_dispatcher_send(hass, SIGNAL_DELETE_ENTITY, dev_id)
+                from homeassistant.helpers.entity_registry import async_get_registry
+                registry = await async_get_registry(hass)
+                for entity in list(registry.entities.values()):
+                    if "huihe.{}".format(dev_id) == entity.unique_id:
+                        registry.async_remove(entity.entity_id)
 
 
+        await load_devices(device_list)
 
-        for obj_id in newlist_ids:
-            if obj_id not in oldlist_ids:
-                for device in device_list:
-                    if obj_id == device.object_id():
-                        dev_type=device.dev_type
-                        ha_type = HUIHE_TYPE_TO_HA[dev_type]
-                        if ha_type not in device_type_list:
-                            device_type_list[ha_type] = []
-
-                        device_type_list[ha_type].append(device.object_id())
-                        hass.data[DOMAIN]['entities'][device.object_id()] = None
-        for ha_type, dev_ids in device_type_list.items():
-            logger_obj.warning("load_platform ha_type,dev_ids :" +str(ha_type)+" ,"+str(dev_ids))
-            discovery.load_platform(hass, ha_type, DOMAIN, {'dev_ids': dev_ids}, config)
-
-    track_time_interval(hass, poll_devices_update, timedelta(minutes=5))
-    hass.services.register(DOMAIN, SERVICE_PULL_DEVICES, poll_devices_update)
+        for ha_type, dev_ids in hass.data[DOMAIN]["entities"][entry.entry_id]["new_devices"].items():
+            async_dispatcher_send(hass, HUIHE_DISCOVERY_NEW.format(ha_type), dev_ids)
+            # logger_obj.warning("load_platform ha_type,dev_ids :" +str(ha_type)+" ,"+str(dev_ids))
+            # discovery.load_platform(hass, ha_type, DOMAIN, {'dev_ids': dev_ids}, config)
 
 
-    def force_update(call):
+    # 定时拉取设备列表更新
+    remove_listener = async_track_time_interval(hass, poll_devices_update, timedelta(minutes=5))
+    hass.data[DATA_HUIHE][entry.entry_id].update({DATA_HUIHE_TIMER: remove_listener})
+    hass.services.async_register(DOMAIN, SERVICE_PULL_DEVICES, poll_devices_update)
+
+
+    async def force_update(call):
         """Force all devices to pull data."""
-        dispatcher_send(hass, SIGNAL_UPDATE_ENTITY)
+        async_dispatcher_send(hass, SIGNAL_UPDATE_ENTITY)
 
 
-    hass.services.register(DOMAIN, SERVICE_FORCE_UPDATE, force_update)
+    hass.services.async_register(DOMAIN, SERVICE_FORCE_UPDATE, force_update)
 
 
-    def select_channel_by_number(service):
+    async def select_channel_by_number(service):
         """Handle the service call."""
         params = service.data.copy()
         logger_obj.info("select_channel_by_number.params：  %s", str(params))
@@ -178,16 +202,16 @@ def setup(hass, config):
             logger_obj.debug("select_channel_by_number.dev_type：  %s",str(dev_type))
             object_id = device.object_id()
             logger_obj.debug("select_channel_by_number.object_id：  %s", str(object_id))
-            if (dev_type =="tv" and device.object_id() in hass.data[DOMAIN]['entities']):
+            if (dev_type =="tv" and device.object_id() in hass.data[DOMAIN]['entities'][entry.entry_id]["devices"]):
                 logger_obj.debug("select_channel_by_number.get tv device：  %s", str(device))
                 type = "number"
                 device.select_channel(command,type)
 
 
-    hass.services.register(DOMAIN, 'select_channel_by_number', select_channel_by_number, schema=SERVICE_CHANNEL_SCHEMA_BY_NUMBER)
+    hass.services.async_register(DOMAIN, 'select_channel_by_number', select_channel_by_number, schema=SERVICE_CHANNEL_SCHEMA_BY_NUMBER)
 
 
-    def select_channel_by_name(service):
+    async def select_channel_by_name(service):
         """Handle the service call."""
         params = service.data.copy()
         logger_obj.info("select_channel_by_name.params：  %s", str(params))
@@ -199,16 +223,16 @@ def setup(hass, config):
             logger_obj.debug("select_channel_by_name.dev_type：  %s", str(dev_type))
             object_id = device.object_id()
             logger_obj.debug("select_channel_by_name.object_id：  %s", str(object_id))
-            if (dev_type =="tv" and device.object_id() in hass.data[DOMAIN]['entities']):
+            if (dev_type =="tv" and device.object_id() in hass.data[DOMAIN]['entities'][entry.entry_id]["devices"]):
                 logger_obj.debug("select_channel_by_name.get tv device：  %s", str(device))
                 type = "name"
                 device.select_channel(command,type)
 
 
-    hass.services.register(DOMAIN, 'select_channel_by_name', select_channel_by_name, schema=SERVICE_CHANNEL_SCHEMA_BY_NAME)
+    hass.services.async_register(DOMAIN, 'select_channel_by_name', select_channel_by_name, schema=SERVICE_CHANNEL_SCHEMA_BY_NAME)
 
 
-    def set_timer(service):
+    async def set_timer(service):
         """Handle the service call."""
         params = service.data.copy()
         logger_obj.info("set_timer.params", params)
@@ -220,17 +244,36 @@ def setup(hass, config):
             logger_obj.debug("set_timer.dev_type", dev_type)
             object_id = device.object_id()
             logger_obj.debug("set_timer.object_id", object_id)
-            if (dev_type in HUMIDIFIER_OEM_MODEL and device.object_id() in hass.data[DOMAIN]['entities']):
+            if (dev_type in HUMIDIFIER_OEM_MODEL and device.object_id() in hass.data[DOMAIN]['entities'][entry.entry_id]["devices"]):
                 logger_obj.debug("select_channel_by_name.get humiditfier device", device)
                 device.set_timer(command,dev_type)
 
 
-    hass.services.register(DOMAIN, 'set_timer', set_timer, schema=SERVICE_TIMER)
+    hass.services.async_register(DOMAIN, 'set_timer', set_timer, schema=SERVICE_TIMER)
 
 
     return True
 
+async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry):
+    """Unload a config entry."""
+    dispatchers = hass.data[DATA_HUIHE][entry.entry_id].get(DATA_HUIHE_DISPATCHERS, [])
+    for unsub_dispatcher in dispatchers:
+        unsub_dispatcher()
 
+    remove_listener = hass.data[DATA_HUIHE][entry.entry_id].get(DATA_HUIHE_TIMER)
+    if remove_listener:
+        # _LOGGER.error('取消监听')
+        remove_listener()
+
+    import asyncio
+    tasks = [
+        hass.config_entries.async_forward_entry_unload(entry, component)
+        # for component in hass.data[DOMAIN]["entities"][entry.entry_id]
+        for component in HUIHE_TYPE_TO_HA.values()
+    ]
+    hass.data[DOMAIN]["entities"].pop(entry.entry_id, None)
+    hass.data[DATA_HUIHE].pop(entry.entry_id, None)
+    return all(await asyncio.gather(*tasks))
 
 
 
@@ -278,7 +321,7 @@ class HuiheDevice(Entity):
 
     def update(self):
         """Refresh huihe device data."""
-        self.huihe.update()
+        return self.huihe.update()
 
 
     @property

@@ -7,7 +7,7 @@ def createTable(cursor):
         ',kfid varchar(20),keylist varchar(64));')
 
 
-    print('创建成功')
+
 
 
 
@@ -52,7 +52,7 @@ def selectAll(cursor):
 
     cursor.execute('select * from device')
     rows = cursor.fetchall()
-    print("fetchall rows:",rows)
+    #print("fetchall rows:",rows)
 
 
     device_list = []

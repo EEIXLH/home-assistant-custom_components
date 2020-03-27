@@ -4,12 +4,12 @@ import datetime
 from .log import logger_obj
 import voluptuous as vol
 from homeassistant.components.media_player import ENTITY_ID_FORMAT, MediaPlayerDevice,PLATFORM_SCHEMA
-from .mediaPlayerConst import (SUPPORT_VOLUME_SET,
-    SUPPORT_TURN_OFF, SUPPORT_TURN_ON, SUPPORT_VOLUME_STEP,SUPPORT_PREVIOUS_TRACK,SUPPORT_NEXT_TRACK,SUPPORT_VOLUME_MUTE)
-from homeassistant.const import CONF_HOST, CONF_NAME, STATE_OFF, STATE_ON
+from .mediaPlayerConst import (   DOMAIN)
+from homeassistant.const import CONF_HOST, CONF_NAME
 import homeassistant.helpers.config_validation as cv
 from . import DATA_HUIHE, HuiheDevice
-
+from . import HUIHE_DISCOVERY_NEW, DATA_HUIHE_DISPATCHERS, DATA_HUIHE_API, DOMAIN as HUIHE_DOMAIN
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 DEFAULT_NAME = "iFutureHome TV"
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,19 +21,47 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up Tuya Climate devices."""
-    if discovery_info is None:
-        return
-    huihe = hass.data[DATA_HUIHE]
-    dev_ids = discovery_info.get('dev_ids')
+# def setup_platform(hass, config, add_entities, discovery_info=None):
+#     """Set up Tuya Climate devices."""
+#     if discovery_info is None:
+#         return
+#     huihe = hass.data[DATA_HUIHE]
+#     dev_ids = discovery_info.get('dev_ids')
+#     devices = []
+#     for dev_id in dev_ids:
+#         device = huihe.get_device_by_id(dev_id)
+#         if device is None:
+#             continue
+#         devices.append(HuiheMediaPlayer(device))
+#     add_entities(devices)
+
+async def async_setup_entry(hass, config_entry, async_add_entities):
+
+    async def async_discover(discovery_dev_ids):
+        await _async_setup_entities(hass, config_entry, async_add_entities, discovery_dev_ids)
+
+    # 注册新设备监听
+    unsub = async_dispatcher_connect(
+        hass, HUIHE_DISCOVERY_NEW.format(DOMAIN), async_discover
+    )
+    hass.data[DATA_HUIHE][config_entry.entry_id][DATA_HUIHE_DISPATCHERS].append(unsub)
+
+    dev_ids = hass.data[HUIHE_DOMAIN]["entities"][config_entry.entry_id]["new_devices"].get(DOMAIN, [])
+    await _async_setup_entities(hass, config_entry, async_add_entities, dev_ids)
+
+
+async def _async_setup_entities(
+        hass, config_entry, async_add_entities, dev_ids
+):
+    huihe = hass.data[DATA_HUIHE][config_entry.entry_id][DATA_HUIHE_API]
     devices = []
     for dev_id in dev_ids:
         device = huihe.get_device_by_id(dev_id)
         if device is None:
             continue
         devices.append(HuiheMediaPlayer(device))
-    add_entities(devices)
+    async_add_entities(devices)
+    dev_ids.clear()
 
 
 

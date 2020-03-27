@@ -1,5 +1,4 @@
 """Support for the Tuya climate devices."""
-from homeassistant.components.climate import ENTITY_ID_FORMAT, ClimateDevice
 from .constant import SWITCH_OEM_MODEL,LIGHT_OEM_MODEL,HUMIDIFIER_OEM_MODEL,IRDEVICE_OEM_MODEL
 from .climateConst import (
     HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_FAN_ONLY, HVAC_MODE_HEAT,HVAC_MODE_DRY,HVAC_MODES,SUPPORT_SWING_MODE,
@@ -9,10 +8,13 @@ from .climateConst import (
     SWING_BOTH, SWING_HORIZONTAL, SWING_OFF, SWING_VERTICAL)
 from .const import (
     ATTR_TEMPERATURE, PRECISION_WHOLE, TEMP_CELSIUS, TEMP_FAHRENHEIT)
-from . import DATA_HUIHE, HuiheDevice,log
 import datetime
 import time
 from .log import logger_obj
+from . import DATA_HUIHE, HuiheDevice
+from homeassistant.components.climate import ENTITY_ID_FORMAT, ClimateDevice, DOMAIN
+from . import HUIHE_DISCOVERY_NEW, DATA_HUIHE_DISPATCHERS, DATA_HUIHE_API, DOMAIN as HUIHE_DOMAIN
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 SUPPORT_FAN = [FAN_AUTO, FAN_HIGH, FAN_MEDIUM, FAN_LOW]
 ATTR_MODE = 'mode'
 CONST_MODE_FAN_AUTO = 'auto'
@@ -54,24 +56,51 @@ HUIHE_STATE_TO_HA = {value: key for key, value in HA_STATE_TO_HUIHE.items()}
 
 SERVICE_CHANNEL = "channel"
 
-DOMAIN = 'ifuturehome'
 
 
+# def setup_platform(hass, config, add_entities, discovery_info=None):
+#     """Set up Tuya Climate devices."""
+#
+#     if discovery_info is None:
+#         return
+#     huihe = hass.data[DATA_HUIHE]
+#     dev_ids = discovery_info.get('dev_ids')
+#     devices = []
+#     for dev_id in dev_ids:
+#         device = huihe.get_device_by_id(dev_id)
+#         if device is None:
+#             continue
+#         devices.append(HuiheClimateDevice(device))
+#     add_entities(devices)
+#
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up Tuya Climate devices."""
 
-    if discovery_info is None:
-        return
-    huihe = hass.data[DATA_HUIHE]
-    dev_ids = discovery_info.get('dev_ids')
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    async def async_discover(discovery_dev_ids):
+        await _async_setup_entities(hass, config_entry, async_add_entities, discovery_dev_ids)
+
+    # 注册新设备监听
+    unsub = async_dispatcher_connect(
+        hass, HUIHE_DISCOVERY_NEW.format(DOMAIN), async_discover
+    )
+    hass.data[DATA_HUIHE][config_entry.entry_id][DATA_HUIHE_DISPATCHERS].append(unsub)
+
+    dev_ids = hass.data[HUIHE_DOMAIN]["entities"][config_entry.entry_id]["new_devices"].get(DOMAIN, [])
+    await _async_setup_entities(hass, config_entry, async_add_entities, dev_ids)
+
+
+async def _async_setup_entities(
+        hass, config_entry, async_add_entities, dev_ids
+):
+    huihe = hass.data[DATA_HUIHE][config_entry.entry_id][DATA_HUIHE_API]
     devices = []
     for dev_id in dev_ids:
         device = huihe.get_device_by_id(dev_id)
         if device is None:
             continue
         devices.append(HuiheClimateDevice(device))
-    add_entities(devices)
+    async_add_entities(devices)
+    dev_ids.clear()
 
 
 
