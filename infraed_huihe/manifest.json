@@ -2,7 +2,7 @@
   "domain": "infraed_huihe",
   "name": "infraed",
   "documentation": "",
-  "dependencies": [],
+  "dependencies": ["mqtt_client"],
   "codeowners": [],
   "requirements": []
 }

@@ -42,11 +42,11 @@ class HuiHeSession:
 SESSION = HuiHeSession()
 
 
-class InfraedApi:
+class InfraedApi():
 
 
-    def init(self):
-
+    def init(self,hass):
+        self.hass=hass
         self.discover_devices()
         return SESSION.devices
 
@@ -293,7 +293,7 @@ class InfraedApi:
 
 
 
-    def ac_control(self, device_id, acValue):
+    async def ac_control(self, device_id, acValue):
         print("ac_control acValue:",acValue)
         sendResponse=-1
         device={}
@@ -311,10 +311,21 @@ class InfraedApi:
             if code !=[]:
                 sendResponse=send_code(code)
             else:
-                print("先假定收到了码库为:'354,1046,354' ")
-                #先假定收到了码库为:'354,1046,354'
-                #code=get_servers_ac_code(code,kfid)
-                code='354,1046,354'
+                type="GetAcEvent"
+                data={
+                    "kfid": kfid,
+                    "par": acValue
+                }
+                print("获取码库的data:",data)
+                client = self.hass.data["mqtt_client"]
+                response = await client.call_cloud_service(type, data)
+                print("获取码库的response:", response)
+                if response["code"] == 0:
+                    code=response["data"]["irdata"]
+                else:
+                    print("response error======")
+                    code=response["data"]["irdata"]
+                print("收到的码库为:",code)
 
                 if code!=None:
                     codeList = code.split(",")

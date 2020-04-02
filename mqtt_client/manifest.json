@@ -1,0 +1,11 @@
+{
+  "domain": "mqtt_client",
+  "name": "MQTT_CLIENT",
+  "documentation": "",
+  "requirements": [
+    "paho-mqtt==1.4.0",
+    "tuyaha==0.0.4"
+  ],
+  "dependencies": [],
+  "codeowners": []
+}

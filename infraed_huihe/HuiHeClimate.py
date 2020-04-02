@@ -56,15 +56,15 @@ class HuiHeClimate(InfraedDevice):
 
     def current_operation(self):
         modelType=self.data["modelType"]
-        if modelType==0:
+        if modelType==1:
                 current_operation='cool'
-        elif modelType==1:
+        elif modelType==4:
                 current_operation = 'heat'
-        elif modelType==2:
+        elif modelType==0:
                 current_operation = 'auto'
         elif modelType==3:
                 current_operation = 'fan_only'
-        elif modelType==4:
+        elif modelType==2:
                 current_operation = 'dry'
         return current_operation
 
@@ -173,7 +173,7 @@ class HuiHeClimate(InfraedDevice):
     # def max_humidity(self):
     #     return 95
 
-    def set_swing_mode(self, swing_mode):
+    async def async_set_swing_mode(self, swing_mode):
         """Set new target swing operation."""
         sendResponse=-1
         if swing_mode == "vertical":
@@ -189,7 +189,7 @@ class HuiHeClimate(InfraedDevice):
             current_temperature = int(self.data["curTmp"])-16
             fan_speed = self.data["curWindSpeed"]
             acValue = powerValue + str(hvac_mode) + '-' + str(current_temperature) + '-' + str(fan_speed) + '-' + str(swing)+'-4'
-            sendResponse=self.api.ac_control(endpointId, acValue)
+            sendResponse=await self.api.ac_control(endpointId, acValue)
 
         else:
             logger_obj.warning("CLIMATE IS " + str(self.huihe.state()) + ", can not set_swing_mode")
@@ -227,7 +227,7 @@ class HuiHeClimate(InfraedDevice):
 
 
 
-    def set_temperature(self, temperature):
+    async def async_set_temperature(self, temperature):
         """Set new target temperature."""
         sendResponse=-1
         if self.state == "on":
@@ -239,7 +239,7 @@ class HuiHeClimate(InfraedDevice):
 
             swing = self.data["swing"]
             acValue = powerValue + str(hvac_mode) + '-' + str(current_temperature) + '-' + str(fan_speed) + '-' + str(swing)+'-2'
-            sendResponse=self.api.ac_control(endpointId, acValue)
+            sendResponse=await self.api.ac_control(endpointId, acValue)
 
             # self.data["mode_list"]['curTmp'] = temperature
         else:
@@ -270,7 +270,7 @@ class HuiHeClimate(InfraedDevice):
 
 
 
-    def set_fan_mode(self, fan_mode):
+    async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
         sendResponse=-1
         if self.state == "on":
@@ -290,7 +290,7 @@ class HuiHeClimate(InfraedDevice):
 
             swing = self.data["swing"]
             acValue = powerValue+ str(hvac_mode) + '-' + str(current_temperature) + '-' + str(fan_speed) + '-' + str(swing)+'-3'
-            sendResponse=self.api.ac_control(endpointId, acValue)
+            sendResponse=await self.api.ac_control(endpointId, acValue)
             #self.data["mode_list"]['curWindSpeed'] = value
         else:
             logger_obj.warning("CLIMATE IS " + str(self.huihe.state()) + ",set_fan_mode IS " + str(fan_mode))
@@ -300,22 +300,20 @@ class HuiHeClimate(InfraedDevice):
 
         return
 
-    def set_hvac_mode(self, hvac_mode):
+    async def async_set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
         sendResponse=-1
         if self.state == "on":
             if hvac_mode=='cool':
-                    hvac_mode=0
+                    hvac_mode=1
             elif hvac_mode=='heat':
-                    hvac_mode = 1
+                    hvac_mode = 4
             elif hvac_mode=='auto':
-                    hvac_mode = 2
+                    hvac_mode = 0
             elif hvac_mode=='fan_only':
                     hvac_mode = 3
             elif hvac_mode== 'dry':
-                    hvac_mode =4
-
-
+                    hvac_mode =2
             powerValue = "0-"
             endpointId = self.obj_id
             # hvac_mode = self.data["modelType"]
@@ -323,7 +321,7 @@ class HuiHeClimate(InfraedDevice):
             fan_speed = self.data["curWindSpeed"]
             swing = self.data["swing"]
             acValue = powerValue+ str(hvac_mode) + '-' + str(current_temperature) + '-' + str(fan_speed) + '-' + str(swing)+'-1'
-            sendResponse=self.api.ac_control(endpointId, acValue)
+            sendResponse=await self.api.ac_control(endpointId, acValue)
 
             #self.data["mode_list"]['modelType'] = modeType
         else:
@@ -355,7 +353,7 @@ class HuiHeClimate(InfraedDevice):
      #   return None
 
 
-    def turn_on(self):
+    async def async_turn_on(self):
         sendResponse=-1
         endpointId =self.obj_id
         hvac_mode = self.data["modelType"]
@@ -364,7 +362,7 @@ class HuiHeClimate(InfraedDevice):
 
         swing=self.data["swing"]
         acValue = "0-" + str(hvac_mode) + '-' + str(current_temperature) + '-' + str(fan_speed)+ '-' + str(swing)+'-0'
-        sendResponse=self.api.ac_control(endpointId, acValue)
+        sendResponse=await self.api.ac_control(endpointId, acValue)
 
 
 
@@ -376,7 +374,7 @@ class HuiHeClimate(InfraedDevice):
 
 
 
-    def turn_off(self):
+    async def async_turn_off(self):
         sendResponse=-1
         endpointId = self.obj_id
         hvac_mode = self.data["modelType"]
@@ -385,7 +383,7 @@ class HuiHeClimate(InfraedDevice):
 
         swing = self.data["swing"]
         acValue = "1-" + str(hvac_mode) + '-' + str(current_temperature) + '-' + str(fan_speed) + '-' + str(swing)+'-0'
-        sendResponse=self.api.ac_control(endpointId, acValue)
+        sendResponse=await self.api.ac_control(endpointId, acValue)
         if sendResponse == True:
             self.state= "off"
 

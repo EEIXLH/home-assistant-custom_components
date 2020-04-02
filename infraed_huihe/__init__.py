@@ -123,7 +123,7 @@ def setup(hass, config):
     infraed = InfraedApi()
     print("infraedinfraed:",infraed)
     hass.data[DATA_INFREAD] = infraed
-    infraed.init()
+    infraed.init(hass)
     hass.data[DOMAIN] = {
         'entities': {}
     }

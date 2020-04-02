@@ -1,3 +1,6 @@
-code='354,354,354,354'
-codeList = code.split(",")
-print(codeList)
+{
+    "device_name": "test ac",
+    "device_type": "ac",
+    "kfid": "010119",
+    "keylist": []
+}

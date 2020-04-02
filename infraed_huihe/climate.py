@@ -242,13 +242,13 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         return SUPPORT_FAN
 
 
-    def set_temperature(self, **kwargs):
+    async def set_temperature(self, **kwargs):
         """Set new target temperature."""
         nowTime = datetime.datetime.now()
         logger_obj.warning("beging set_temperature time is"+str(nowTime))
         if self.infraed.state== "on":
             if ATTR_TEMPERATURE in kwargs:
-                self.infraed.set_temperature(kwargs[ATTR_TEMPERATURE])
+                await self.infraed.set_temperature(kwargs[ATTR_TEMPERATURE])
         else:
             logger_obj.warning("CLIMATE IS " + str(self.infraed.state) + ", can not set_temperature" )
         time.sleep(3)
@@ -265,24 +265,24 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
     #     self.async_schedule_update_ha_state()
 
 
-    def set_swing_mode(self, swing_mode):
+    async def async_set_swing_mode(self, swing_mode):
         """Set new target swing operation."""
         nowTime = datetime.datetime.now()
         logger_obj.warning("beging set_fan_mode time is" + str(nowTime))
         if self.infraed.state== "on":
-            self.infraed.set_swing_mode(swing_mode)
+            await self.infraed.async_set_swing_mode(swing_mode)
         else:
             logger_obj.warning("CLIMATE IS " + str(self.infraed.state) + ",set_swing_mode IS " + str(swing_mode))
         time.sleep(3)
 
         self.async_schedule_update_ha_state()
 
-    def set_fan_mode(self, fan_mode):
+    async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
         nowTime = datetime.datetime.now()
         logger_obj.warning("beging set_fan_mode time is"+str(nowTime))
         if  self.infraed.state== "on":
-            self.infraed.set_fan_mode(fan_mode)
+            await self.infraed.async_set_fan_mode(fan_mode)
         else:
             logger_obj.warning("CLIMATE IS " + str(self.infraed.state) + ",set_fan_mode IS " + str(fan_mode))
         time.sleep(3)
@@ -290,22 +290,21 @@ class HuiheClimateDevice(InfraedDevice, ClimateDevice):
         self.async_schedule_update_ha_state()
 
 
-    def set_hvac_mode(self, hvac_mode):
+    async def async_set_hvac_mode(self, hvac_mode):
         """Set new target hvac mode."""
         nowTime = datetime.datetime.now()
         logger_obj.warning("beging set_hvac_mode time is"+str(nowTime))
         if self.infraed.state== "on":
                 if hvac_mode == HVAC_MODE_OFF:
-                    self.infraed.turn_off()
+                    await self.infraed.async_turn_off()
                 elif hvac_mode == HVAC_MODE_AUTO:
-                    self.infraed.turn_on()
+                    await self.infraed.async_turn_on()
                 else:
-                    self.infraed.set_hvac_mode(hvac_mode)
-
+                    await self.infraed.async_set_hvac_mode(hvac_mode)
         else:
 
             if hvac_mode == HVAC_MODE_AUTO:
-                    self.infraed.turn_on()
+                    await self.infraed.async_turn_on()
             else:
                     logger_obj.warning("CLIMATE IS " + str(self.infraed.state) + ",set_hvac_mode IS " + str(hvac_mode))
 

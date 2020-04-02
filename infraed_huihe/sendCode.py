@@ -15,21 +15,24 @@ def write_code_config(remoteName, buttonNameKey, codeList):
     timeCode = ""
     i = 0
     for code in codeList:
-        i = i + 1
-        if "-" in str(code):
+        if int(code)>=30000:
             pass
         else:
-            endCode = code
-        if i < 5:
-            pass
-        else:
-            i = 1
-            f.write('\n')
-        f.write('      ' + str(endCode))
+            i = i + 1
+            if "-" in str(code):
+                pass
+            else:
+                endCode = code
+            if i < 5:
+                pass
+            else:
+                i = 1
+                f.write('\n')
+            f.write('      ' + str(endCode))
 
     f.write('\n' + '\n' + "      end raw_codes" + '\n' + '\n' + "end remote")
     f.close()
-    os.system('sudo cp  demo.lircd.conf  /etc/lirc/lircd.conf.d')
+    os.system('sudo cp  .homeassistant/demo.lircd.conf  /etc/lirc/lircd.conf.d')
     return
 
 

@@ -24,8 +24,9 @@ class InfraedDevice(object):
         elif self.dev_type in LIGHT_MODEL:
                 self.obj_type = "light"
         elif self.dev_type in CLIMATE_MODEL:
+                self.state = "off"
                 self.obj_type = "climate"
-                self.data["modelType"] = 2
+                self.data["modelType"] = 0
                 self.data["curTmp"] = 26
                 self.data["curWindSpeed"] = 0
                 self.data["swing"] = 0
