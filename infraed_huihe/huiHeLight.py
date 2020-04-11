@@ -8,6 +8,7 @@ class HuiHeLight(InfraedDevice):
         state = self.state
         if state is None:
             return "on"
+        # return "on"
         return state
 
 
@@ -16,6 +17,9 @@ class HuiHeLight(InfraedDevice):
         return 50
         return brightness
 
+    def key_Id_list(self):
+        KeyIdlist =self.KeyIdlist
+        return KeyIdlist
 
     def set_brightness(self, brightness):
             pass
@@ -115,5 +119,8 @@ class HuiHeLight(InfraedDevice):
 
 
     def set_color_temp(self, color_temp):
-        pass
-        # self.api.device_control(self.obj_id, 'CCT', color_temp)
+        sendResponse = self.api.device_control(self.obj_id, 997)
+        if sendResponse == True:
+            self.state = "on"
+
+        return

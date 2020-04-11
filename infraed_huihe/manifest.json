@@ -2,7 +2,8 @@
   "domain": "infraed_huihe",
   "name": "infraed",
   "documentation": "",
-  "dependencies": ["mqtt_client"],
+   "dependencies": ["mqtt_client"],
   "codeowners": [],
-  "requirements": []
+  "requirements": ["mqtt_client","voluptuous","psutil","colorlog","py_irsend"]
 }
+

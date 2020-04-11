@@ -4,9 +4,7 @@ import datetime
 from .log import logger_obj
 import voluptuous as vol
 from homeassistant.components.media_player import ENTITY_ID_FORMAT, MediaPlayerDevice,PLATFORM_SCHEMA
-from .mediaPlayerConst import (SUPPORT_VOLUME_SET,
-    SUPPORT_TURN_OFF, SUPPORT_TURN_ON, SUPPORT_VOLUME_STEP,SUPPORT_PREVIOUS_TRACK,SUPPORT_NEXT_TRACK,SUPPORT_VOLUME_MUTE)
-from homeassistant.const import CONF_HOST, CONF_NAME, STATE_OFF, STATE_ON
+from homeassistant.const import CONF_HOST, CONF_NAME
 import homeassistant.helpers.config_validation as cv
 from . import DATA_INFREAD, InfraedDevice
 

@@ -1,6 +1,6 @@
-import sys, os, subprocess, time
+import  os, subprocess, time
 from .judgeProcess import judgeprocess
-
+from .log import logger_obj
 file_name = 'learnCode.txt'
 newCode_file_name = 'newCode.txt'
 processname = "mode2"
@@ -17,7 +17,6 @@ def read_code_file(processname):
         content = f.read()
         code = content.rstrip()
         getCode = ','.join(code.split())
-        # print(getCode)
 
     list3 = getCode.split(",")
 
@@ -41,8 +40,6 @@ def read_code_file(processname):
         else:
             pass
 
-    print("i=", i)
-    print("enddddddd-pulse-space=", num)
 
     return list_slice
 
@@ -79,14 +76,14 @@ def stop_learn():
 
 
 def learn_code(timeout):
-    print("*********** coming learn code ***********")
+    logger_obj.info("*********** coming learn code ***********")
     learn_code = []
     getList = []
     a = subprocess.Popen("mode2 -m -d /dev/lirc1 >" + file_name, shell=True)
 
     waitTime = 0
     while waitTime < timeout:
-        print("waitTime:", waitTime)
+        logger_obj.info("learn_code waitTime ", waitTime)
         time.sleep(1)
         getList = read_code_file(processname)
         if getList != []:
@@ -98,17 +95,13 @@ def learn_code(timeout):
         else:
             waitTime = waitTime + 1
     else:
-        print("pkill mode2")
         os.system('pkill mode2')
         pass
 
-    print("finish learn_code ：", learn_code)
-
+    logger_obj.info("inish learn_code ", learn_code)
     return learn_code
 
 
-if __name__ == '__main__':
-    Code = learn_code()
-    print("get learn Code:", Code)
+# if __name__ == '__main__':
 
 

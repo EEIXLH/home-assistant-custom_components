@@ -1,7 +1,6 @@
-import os, sys, stat, time
-from shutil import copyfile
+import os, time
 from py_irsend import irsend
-
+from .log import logger_obj
 filesPath = '.homeassistant/demo.lircd.conf'
 copyCMD = ""
 
@@ -15,7 +14,9 @@ def write_code_config(remoteName, buttonNameKey, codeList):
     timeCode = ""
     i = 0
     for code in codeList:
-        if int(code)>=30000:
+        if code=='' or code==None or code=="":
+            pass
+        elif int(code)>=30000 :
             pass
         else:
             i = i + 1
@@ -37,33 +38,33 @@ def write_code_config(remoteName, buttonNameKey, codeList):
 
 
 def send_code(codeList):
-    print("coming send_code ")
-    print("codeList: ",codeList)
+    logger_obj.info("send_code codeList ：%s",codeList)
     remoteName = 'demo'
     buttonNameKey = "on"
     sendResponse=0
     write_code_config(remoteName, buttonNameKey, codeList)
     restartResponse = os.system('sudo service lircd restart')
-    print("restartResponse:", restartResponse)
+    logger_obj.info("restartResponse  ：%s",restartResponse)
     if restartResponse != 0:
-        print("sudo service lircd restart is erro")
+        logger_obj.info("sudo service lircd restart is erro")
         return False
     else:
         time.sleep(0.3)
 
         try:
-            # sendResponse=os.system('irsend SEND_ONCE demo on')
-            irsend.send_once(remoteName, [buttonNameKey])
+            logger_obj.info("irsend SEND_ONCE demo on 1")
+            sendResponse=os.system('irsend SEND_ONCE demo on')
+            #irsend.send_once(remoteName, [buttonNameKey])
 
         except:
             try:
+                logger_obj.info("irsend SEND_ONCE demo on 2")
                 os.system('sudo service lircd restart')
                 time.sleep(0.5)
-                # sendResponse = os.system('irsend SEND_ONCE demo on')
-                irsend.send_once(remoteName, [buttonNameKey])
+                sendResponse = os.system('irsend SEND_ONCE demo on')
+                #irsend.send_once(remoteName, [buttonNameKey])
             except:
-
-                print("send_code is erro")
+                logger_obj.info("send_code is err 2")
                 return False
 
 

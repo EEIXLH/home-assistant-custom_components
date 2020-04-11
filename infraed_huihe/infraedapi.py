@@ -1,29 +1,17 @@
 # -*- coding:utf-8 -*-
-import collections
-# import sys
-#
-#
-# sys.setdefaultencode('utf8')
-import json
-import requests
-import time
-import gzip
+
 from .get_huihe_device  import get_huihe_device
-import datetime
-import sys
+import sqlite3
+from .deviceDB import createTable,insertOneDevice,selectAll,selectCodeByEndpointId,deleteOneDevice,updateCodeListByEndpointId
+from .sendCode import send_code
+from .log import logger_obj
+db_path = '.homeassistant/irdevices.db'
 AYLA_DEVICE_SERVER = "ads-field.aylanetworks.com"  # 美国开发环境
 APPID="huihe-d70b5148-field-us-id"
 APPSECRET="huihe-d70b5148-field-us-orxaM7xo-jcuYLzvMKNwofCv9NQ"
 TUYACLOUDURL = "https://px1.tuya{}.com"
 DEFAULTREGION = 'us'
-import sqlite3
 REFRESHTIME = 60 * 60 * 12
-
-from .log import logger_obj
-from .deviceDB import createTable,insertOneDevice,selectAll,selectCodeByEndpointId,deleteOneDevice,updateCodeListByEndpointId
-from .sendCode import send_code
-db_path = '.homeassistant/irdevices.db'
-
 
 class HuiHeSession:
 
@@ -58,7 +46,6 @@ class InfraedApi():
     def discover_devices(self):
         SESSION.devices=[]
         device_list=[]
-        # print("coming discover_devices")
         # 数据库文件是test.db
         # 如果文件不存在，会自动在当前目录创建:
         conn = sqlite3.connect(db_path)
@@ -79,7 +66,6 @@ class InfraedApi():
                SESSION.devices.extend(get_huihe_device(device, self))
         else:
            pass
-        #print("SESSION.devices----:", SESSION.devices)
 
         return device_list
 
@@ -92,7 +78,7 @@ class InfraedApi():
 
 
     def add_new_device(self,device):
-        print("add_new_device:", device)
+        logger_obj.info(" add_new_device：  %s",device)
 
         conn = sqlite3.connect(db_path)
         conn.text_factory = str
@@ -120,10 +106,9 @@ class InfraedApi():
 
         infraed_str = "infraed_"
         num = dev_id.index(infraed_str)
-        print("num:", num)
         number = num + 8
         device_id = dev_id[number:]
-        print("device_id:", device_id)
+        logger_obj.info(" delete_device device_id：  %s", device_id)
         conn = sqlite3.connect(db_path)
         conn.text_factory = str
         # 创建一个Cursor:
@@ -148,42 +133,41 @@ class InfraedApi():
         infraed_str="infraed_"
         if infraed_str in endpointId:
             num=endpointId.index(infraed_str)
-            print("num:", num)
             number = num + 8
             device_id = endpointId[number:]
 
         else:
             device_id=endpointId
-        print("device_id:", device_id)
-
+        logger_obj.info(" modify_device_code device_id：  %s", device_id)
         conn = sqlite3.connect(db_path)
         conn.text_factory = str
         # 创建一个Cursor:
         cursor = conn.cursor()
         rows=selectCodeByEndpointId(cursor,device_id)
-        modifyList=[]
+        modifyList = []
         for row in rows:
             if row is not None:
-                if type(row[4]) == str:
+                if type(row["keylist"]) == str:
 
-                    keylist = row[4]
+                    keylist = row["keylist"]
                 else:
-                    keylist = row[4].decode('utf-8')
+                    keylist = row["keylist"].decode('utf-8')
                 jsonList = eval(keylist)
-                i=0
+                i = 0
                 for codeDate in jsonList:
-                    if key_id == codeDate['key_id']:
-                        print("key_id---:", key_id)
+                    if str(key_id) == str(codeDate['key_id']):
                         i = i + 1
                         codeDate['pulse'] = irdata
                     modifyList.append(codeDate)
 
                 if i == 0:
-                    print("no same key id")
+                    logger_obj.info(" modify_device_code no same key id device_id ")
                     addcode = {}
                     addcode["key_id"] = key_id
                     addcode["pulse"] = irdata
                     modifyList.append(addcode)
+
+        logger_obj.info(" modifyList：  %s",modifyList)
         updateCodeListByEndpointId(cursor, str(modifyList).encode('utf-8'), device_id)
 
         cursor.close()
@@ -207,8 +191,8 @@ class InfraedApi():
         return None
 
     def get_code(self, endpointId, keyId):
-        print("endpointId",endpointId)
         code=""
+        kfid=""
         codeList=[]
         conn = sqlite3.connect(db_path)
         conn.text_factory = str
@@ -218,13 +202,17 @@ class InfraedApi():
         device_list = []
         for row in rows:
             if row is not None:
-                kfid = row[3]
-                keylist = row[4].decode('utf-8')
-                jsonList = eval(keylist)
+                jsonList = []
+                if str(endpointId) == str(row['device_id']):
+                    kfid = row["kfid"]
+                    keylist = row['keylist']
+                    jsonList = eval(keylist)
                 for codeDate in jsonList:
-                    if str(keyId) == codeDate['key_id']:
+                    logger_obj.info("get_code codeDate：  %s",codeDate)
+                    if str(keyId) == str(codeDate['key_id']):
                         code = codeDate['pulse']
                         codeList = code.split(",")
+
         # 关闭Cursor:
         cursor.close()
         # 提交事务:
@@ -238,14 +226,8 @@ class InfraedApi():
 
         sendResponse = -1
         code,kfid=self.get_code(device_id,keyId)
-
-        print("device_control code:", code)
         if code !=[]:
             sendResponse=send_code(code)
-        # if param is None:
-        #     param = {}
-        # nowTime = datetime.datetime.now()
-        # logger_obj.warning("beging control device time is"+str(nowTime))
 
         if sendResponse == True:
 
@@ -255,50 +237,14 @@ class InfraedApi():
             return False
 
 
-    # def get_ac_code(self, endpointId, acValue):
-    #     print("endpointId",endpointId)
-    #     code=""
-    #     codeList=[]
-    #     conn = sqlite3.connect(db_path)
-    #     conn.text_factory = str
-    #     # 创建一个Cursor:
-    #     cursor = conn.cursor()
-    #     rows=selectCodeByEndpointId(cursor,endpointId)
-    #     device_list = []
-    #     for row in rows:
-    #         if row is not None:
-    #             kfid= row[3]
-    #             keylist = row[4].decode('utf-8')
-    #             jsonList = eval(keylist)
-    #             if kfid==-1:
-    #                 for codeDate in jsonList:
-    #                     if str(acValue) == codeDate['key_id']:
-    #                         code = codeDate['pulse']
-    #                         codeList = code.split(",")
-    #             else:
-    #                 for codeDate in jsonList:
-    #                     if str(acValue) == codeDate['par']:
-    #                         code = codeDate['pulse']
-    #                         codeList = code.split(",")
-    #
-    #     # 关闭Cursor:
-    #     cursor.close()
-    #     # 提交事务:
-    #     conn.commit()
-    #     # 关闭Connection:
-    #     conn.close()
-    #
-    #     return codeList,kfid
-
 
 
 
     async def ac_control(self, device_id, acValue):
-        print("ac_control acValue:",acValue)
+        logger_obj.info("ac_control acValue：  %s",acValue)
         sendResponse=-1
         device={}
         code,kfid=self.get_code(device_id,acValue)
-        print("kfidkfidkfidkfid:",kfid)
         if kfid=="-1":
             if code != []:
                 sendResponse=send_code(code)
@@ -316,16 +262,13 @@ class InfraedApi():
                     "kfid": kfid,
                     "par": acValue
                 }
-                print("获取码库的data:",data)
                 client = self.hass.data["mqtt_client"]
                 response = await client.call_cloud_service(type, data)
-                print("获取码库的response:", response)
                 if response["code"] == 0:
                     code=response["data"]["irdata"]
                 else:
-                    print("response error======")
+                    logger_obj.info(" ac_control response error ")
                     code=response["data"]["irdata"]
-                print("收到的码库为:",code)
 
                 if code!=None:
                     codeList = code.split(",")

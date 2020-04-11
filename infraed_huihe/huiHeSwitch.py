@@ -4,17 +4,18 @@ class HuiHeSwitch(InfraedDevice):
 
 
     def state(self):
-        state = self.data.get('state')
+        state = self.state
         if state is None:
-            return None
+            return "on"
+        # return "on"
         return state
 
 
     def turn_on(self):
-        self.api.device_control(self.obj_id,"switch1", '1')
+        self.api.device_control(self.obj_id,1)
 
 
     def turn_off(self):
-        self.api.device_control(self.obj_id,"switch1", '0')
+        self.api.device_control(self.obj_id,1)
 
 

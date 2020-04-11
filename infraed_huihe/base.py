@@ -1,10 +1,4 @@
-import time
-from .constant import SWITCH_MODEL,LIGHT_MODEL,CLIMATE_MODEL,MEDIA_PLAYER_MODEL
-import requests
-import json
-from .log import logger_obj
-import datetime
-import time
+from .constant import SWITCH_MODEL,LIGHT_MODEL,CLIMATE_MODEL,MEDIA_PLAYER_MODEL,FAN_MODEL
 
 class InfraedDevice(object):
     def __init__(self, device_info, api):
@@ -18,6 +12,12 @@ class InfraedDevice(object):
         self.kfid = device_info.get('kfid')
         self.keylist = device_info.get('keylist')
         self.state = "on"
+        self.key_id_list = []
+        jsonlst=eval(self.keylist)
+        for keys in jsonlst:
+            key_id = keys["key_id"]
+            self.key_id_list.append(key_id)
+
 
         if self.dev_type in SWITCH_MODEL:
                 self.obj_type = "switch"
@@ -32,8 +32,8 @@ class InfraedDevice(object):
                 self.data["swing"] = 0
         elif self.dev_type in MEDIA_PLAYER_MODEL:
             self.obj_type = "media_player"
-
-
+        elif self.dev_type in FAN_MODEL:
+            self.obj_type = "fan"
         else:
                 pass
 
@@ -42,7 +42,6 @@ class InfraedDevice(object):
         return self.obj_name
 
     def state(self):
-        print("----self.state:",self.state)
         return self.state
 
     def device_type(self):

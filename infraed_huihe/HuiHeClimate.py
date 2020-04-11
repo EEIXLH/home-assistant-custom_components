@@ -1,12 +1,8 @@
 from .base import InfraedDevice
-from .constant import SWITCH_MODEL,LIGHT_MODEL,CLIMATE_MODEL,MEDIA_PLAYER_MODEL
-from .climateConst import (
-    ATTR_HVAC_MODE, HVAC_MODE_COOL, HVAC_MODE_DRY, HVAC_MODE_FAN_ONLY,
-    HVAC_MODE_HEAT, SUPPORT_FAN_MODE, HVAC_MODE_AUTO, HVAC_MODE_OFF,
-    SUPPORT_TARGET_TEMPERATURE)
+from .climateConst import ( HVAC_MODE_COOL, HVAC_MODE_DRY, HVAC_MODE_FAN_ONLY,
+    HVAC_MODE_HEAT, HVAC_MODE_AUTO, HVAC_MODE_OFF)
 from . import const
 import logging
-import json
 _LOGGER = logging.getLogger(__name__)
 from .log import logger_obj
 

@@ -1,5 +1,4 @@
-import sqlite3
-
+from .log import logger_obj
 
 def createTable(cursor):
     cursor.execute(
@@ -23,7 +22,6 @@ def insertOneDevice(cursor,device):
     # 通过rowcount获得插入的行数:
     num = cursor.rowcount
     if num == 1:
-        print("成功 num:", num)
         return True
 
     else:
@@ -43,8 +41,8 @@ def insert(conn,deviceName, devicetType, kfid, keylist):
         '''
 
     D=conn.execute(sql_insert, (deviceName, devicetType, kfid, keylist))
-    print('插入数据成功：',D)
 
+    logger_obj.info("插入数据成功：  %s",D)
 
 
 
@@ -52,7 +50,6 @@ def selectAll(cursor):
 
     cursor.execute('select * from device')
     rows = cursor.fetchall()
-    #print("fetchall rows:",rows)
 
 
     device_list = []
@@ -62,7 +59,6 @@ def selectAll(cursor):
             d['device_name'] = row[1]
             d['device_type'] = row[2]
             d['kfid'] = row[3]
-            print(type(row[4]))
             if type(row[4])== str:
                 d['keylist'] = row[4]
             else:
@@ -72,12 +68,30 @@ def selectAll(cursor):
 
 
 def selectCodeByEndpointId(cursor,endpointId):
-    codeList = []
-    sql =  '''
-    SELECT * FROM device WHERE deviceiId= ?
-    '''
-    cursor.execute(sql,str(endpointId))
-    rows = cursor.fetchall()
+
+    # devId=str(endpointId)
+    # sql =  '''
+    # SELECT * FROM device WHERE deviceiId= ?
+    # '''
+    # cursor.execute(sql,devId)
+    # rows = cursor.fetchall()
+
+    devId = str(endpointId)
+    rows = []
+    cursor.execute('select * from device')
+    device_list = cursor.fetchall()
+    for device in device_list:
+        d = {}
+        d['device_id'] = device[0]
+        d['device_name'] = device[1]
+        d['device_type'] = device[2]
+        d['kfid'] = device[3]
+        if type(device[4]) == str:
+            d['keylist'] = device[4]
+        else:
+            d['keylist'] = device[4].decode('utf-8')
+        if str(device[0]) == devId:
+            rows.append(d)
 
 
     return rows
@@ -90,7 +104,6 @@ def deleteOneDevice(cursor,dev_id):
     根据 id 删除对应的那条数据
     """
 
-    print("dev_iddev_iddev_id:",dev_id)
     sql_delte = '''
     DELETE FROM
       device
@@ -99,8 +112,7 @@ def deleteOneDevice(cursor,dev_id):
     '''
     # tuple 只有一个元素的时候必须是这种写法
     cursor.execute(sql_delte, dev_id)
-
-    print("删除成功")
+    logger_obj.info("删除设备  %s  成功 ", dev_id)
 
     return
 

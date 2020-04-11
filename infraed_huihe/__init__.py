@@ -1,6 +1,5 @@
 """Support for ifuturehome Smart devices."""
 from datetime import timedelta
-from .log import get_logger
 import voluptuous as vol
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
@@ -12,15 +11,12 @@ from homeassistant.helpers.event import track_time_interval
 from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_COMMAND,
-    CONF_DEVICE,
-    CONF_HOST,
-    CONF_MAC,
-    CONF_SWITCHES,
-    CONF_TIMEOUT,
-    CONF_TYPE,
-    STATE_ON,
 )
-import datetime
+from .constant import (BRIGHTNESS_INCREASE_ACTION,BRIGHTNESS_INCREASE_KEYID,BRIGHTNESS_DECREASE_ACTION,BRIGHTNESS_DECREASE_KEYID,
+COLOR_TEMPERATURE_KEYID,COLOR_TEMPERATURE_ACTION,CLR_TEMP_DECREASE_KEYID,CLR_TEMP_DECREASE_ACTION,CLR_TEMP_INCREASE_KEYID,CLR_TEMP_INCREASE_ACTION,
+
+)
+
 from .log import logger_obj
 from .constant import SWITCH_MODEL,LIGHT_MODEL,MEDIA_PLAYER_MODEL,MEDIA_PLAYER_MODEL
 from .learnCode import learn_code,stop_learn
@@ -35,18 +31,15 @@ SIGNAL_UPDATE_ENTITY = 'infraed_update'
 SERVICE_FORCE_UPDATE = 'force_update'
 SERVICE_PULL_DEVICES = 'pull_devices'
 
-HUMIDITY_TYPE = ['0001-0401-0001','0001-0401-0002']
 
 
 INFREAD_TYPE_TO_HA = {
     'light': 'light',
-    '0000-0101-0001':'switch' ,
-    '0001-0401-0001':'climate' ,
-    '0001-0401-0002':'climate' ,
-    '0001-0202-0001':'light',
-    'light':'light',
     'ac':'climate',
     'tv':'media_player',
+    'stb':'media_player',
+    'fan':'fan',
+    'switch':'switch'
 }
 
 
@@ -71,11 +64,11 @@ SERVICE_STAR_LEARNING_CODE= vol.Schema({
 vol.Optional('timeout', default=20): int
 })
 
-SERVICE_MODIFY_DEVICE_CODE= vol.Schema({
-    'device_name': str,
-    'device_type': str,
-    'keylist': list
-})
+# SERVICE_MODIFY_DEVICE_CODE= vol.Schema({
+#     'device_name': str,
+#     'device_type': str,
+#     'keylist': list
+# })
 
 
 SERVICE_SEND_LEARNING_CODE= vol.Schema({
@@ -85,7 +78,7 @@ SERVICE_SEND_LEARNING_CODE= vol.Schema({
 
 SERVICE_CONTROLLING_DEVICE=vol.Schema({
     'entity_id': str,
-    'action': str
+    'key_id': str
 })
 
 
@@ -102,26 +95,12 @@ SERVICE_DELETE_DEVICE= vol.Schema({
 })
 
 
-SERVICE_CHANNEL_SCHEMA_BY_NUMBER= vol.Schema(
-    {
-        vol.Required(CONF_ENTITY_ID): cv.string,
-        vol.Required(CONF_COMMAND): vol.Coerce(int),
-    }
-)
 
-SERVICE_TIMER= vol.Schema(
-    {
-        vol.Required(CONF_ENTITY_ID): cv.string,
-        vol.Required(CONF_COMMAND): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=25))
-    }
-)
 
 def setup(hass, config):
     """Set up ifuturehome Component."""
-    logger_obj.info("beging setup ifuturehome")
     from .infraedapi import InfraedApi
     infraed = InfraedApi()
-    print("infraedinfraed:",infraed)
     hass.data[DATA_INFREAD] = infraed
     infraed.init(hass)
     hass.data[DOMAIN] = {
@@ -131,7 +110,6 @@ def setup(hass, config):
 
     def load_devices(device_list):
         """Load new devices by device_list."""
-        #print("########1", device_list)
         device_type_list = {}
         for device in device_list:
 
@@ -165,15 +143,11 @@ def setup(hass, config):
 
         for device in device_list:
             newlist_ids.append(device.object_id())
-        # logger_obj.warning("newlist_ids :" + str(newlist_ids))
         for dev_id in list(hass.data[DOMAIN]["entities"]):
             oldlist_ids.append(dev_id)
-        # logger_obj.warning("oldlist_ids :" + str(oldlist_ids))
-
-        #logger_obj.info("poll_devices_update dev_id :" + str(dev_id))
         for dev_id in list(hass.data[DOMAIN]['entities']):
             if dev_id not in newlist_ids:
-                logger_obj.info("SIGNAL_DELETE_ENTITY ha_type,dev_id :" + str(dev_id) )
+                logger_obj.info("SIGNAL_DELETE_ENTITY ha_type,dev_id ：%s", str(dev_id) )
                 dispatcher_send(hass, SIGNAL_DELETE_ENTITY, dev_id)
                 hass.data[DOMAIN]['entities'].pop(dev_id)
 
@@ -212,34 +186,26 @@ def setup(hass, config):
         load_devices(device_list)
     hass.services.register(DOMAIN, 'add_new_device', add_new_device, schema=SERVICE_ADD_NEW_DEVICE)
 
-    # OK？？
+    # OK
     def controlling_device(service):
         """Handle the service call."""
 
         params = service.data.copy()
         endpointId = params['entity_id']
-        action = params['action']
+        keyId = params['key_id']
 
-        keyId = 0
-        if action == "light.brightness_increase":
-            keyId = 2202
-        elif action == "light.brightness_decrease":
-            keyId = 2207
-        else:
-            pass
-        print("keyId:", keyId)
+
         infraed_str = "infraed_"
         num = endpointId.index(infraed_str)
-        print("num:", num)
         number = num + 8
         device_id = endpointId[number:]
-        print("device_id:", device_id)
-        #更新对应的设备属性暂未实现
-        # sendResponse=infraed.device_control(device_id, keyId)
-        # if sendResponse == True:
-        #     self.state = "off"
-        #
-        # return
+        # 发送设备控制命令
+        sendResponse=infraed.device_control(device_id, keyId)
+        if sendResponse == True:
+            # 更新对应的设备属性暂未实现
+            pass
+
+        return
 
     hass.services.register(DOMAIN, 'controlling_device', controlling_device, schema=SERVICE_CONTROLLING_DEVICE)
 
@@ -263,18 +229,17 @@ def setup(hass, config):
             learnCode = learn_code(timeout)
             sendDate = {}
 
-            print("--------------finish learning code-------------- ")
 
             if learnCode == []:
-                print("hass.bus.fire('send_learning_code_event', learnCode) is null")
+                logger_obj.info("hass.bus.fire('send_learning_code_event', learnCode is null")
             else:
                 try:
                     strDate = ','.join(learnCode)
                     sendDate["pulse"] = strDate
-                    print("send_learning_code_event strDate:", sendDate)
+                    logger_obj.info("hass.bus.fire('send_learning_code_event strDate ：  %s",sendDate)
                     hass.bus.fire("send_learning_code_event", sendDate)
                 except:
-                    print("hass.bus.fire('send_learning_code_event', learnCode) is erro")
+                    logger_obj.info("hass.bus.fire('send_learning_code_event', learnCodeis is erro")
                     pass
 
         return True
@@ -284,9 +249,7 @@ def setup(hass, config):
     # OK
     def stop_learning_code(call):
         """Handle the service call."""
-        print("--------------beging stop_learning_code-------------- ")
         stop_learn()
-        print("--------------finish stop_learning_code-------------- ")
         return
     hass.services.register(DOMAIN, 'stop_learning_code', stop_learning_code)
 
@@ -295,13 +258,11 @@ def setup(hass, config):
     def send_learning_code(service):
         """Handle the service call."""
 
-        print("--------------beging send_learning_code-------------- ")
         params = service.data.copy()
         codeList=params["pulse"]
         code=codeList.split(",")
         send_code(code)
 
-        print("--------------finish send_learning_code-------------- ")
     hass.services.register(DOMAIN, 'send_learning_code', send_learning_code, schema=SERVICE_SEND_LEARNING_CODE)
 
 
@@ -309,14 +270,12 @@ def setup(hass, config):
     def delete_device(service):
         """Handle the service call."""
 
-        print("--------------beging delete_device-------------- ")
         params = service.data.copy()
         entity_id=params["entity_id"]
         infraed.delete_device(entity_id)
         dispatcher_send(hass, SIGNAL_DELETE_ENTITY, entity_id)
         hass.data[DOMAIN]['entities'].pop(entity_id)
 
-        print("--------------finish delete_device-------------- ")
     hass.services.register(DOMAIN, 'delete_device', delete_device, schema=SERVICE_DELETE_DEVICE)
 
     return True
@@ -346,15 +305,22 @@ class InfraedDevice(Entity):
     @property
     def object_id(self):
         """Return infraed device id."""
-        #print("object_id:", self.infraed.object_id())
         return self.infraed.object_id()
+
+    @property
+    def state_attributes(self):
+        """Return the state attributes."""
+        data = {"key_id_list": self.infraed.key_id_list,
+                "hh_device_type":self.infraed.dev_type
+                }
+
+        return data
 
 
     @property
     def unique_id(self):
         """Return a unique ID."""
         unique_id='infraed.{}'.format(self.infraed.object_id())
-        #print("unique_id:",unique_id)
         return unique_id
 
 
@@ -393,7 +359,6 @@ class InfraedDevice(Entity):
     def _delete_callback(self, dev_id):
         """Remove this entity."""
         if dev_id == self.infraed.object_id():
-            logger_obj.info("_delete device :" + str(dev_id))
             self.hass.async_create_task(self.async_remove())
 
 

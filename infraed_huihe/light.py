@@ -1,9 +1,5 @@
 """Support for the Huihe lights."""
-from homeassistant.components.light import (
-    ATTR_BRIGHTNESS, ATTR_COLOR_TEMP, ATTR_HS_COLOR, ENTITY_ID_FORMAT,
-    SUPPORT_BRIGHTNESS, SUPPORT_COLOR, SUPPORT_COLOR_TEMP, Light)
 from homeassistant.util import color as colorutil
-
 from . import DATA_INFREAD, InfraedDevice
 import datetime
 from .log import logger_obj
@@ -15,10 +11,11 @@ from homeassistant.components.light import (
     SUPPORT_BRIGHTNESS,
     SUPPORT_COLOR,
     SUPPORT_COLOR_TEMP,
-    Light,
-    DOMAIN
+    Light
 )
 import time
+
+
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up Huihe light device."""
     if discovery_info is None:
@@ -69,6 +66,7 @@ class InfraedLight(InfraedDevice, Light):
         # return colorutil.color_temperature_kelvin_to_mired(color_temp)
 
 
+
     @property
     def is_on(self):
         """Return true if light is on."""
@@ -96,8 +94,6 @@ class InfraedLight(InfraedDevice, Light):
 
     def turn_on(self, **kwargs):
         """Turn on or control the light."""
-        nowTime = datetime.datetime.now()
-        logger_obj.warning("beging set_fan_mode time is" + str(nowTime))
 
         if (ATTR_BRIGHTNESS not in kwargs
                 and ATTR_HS_COLOR not in kwargs
@@ -110,20 +106,14 @@ class InfraedLight(InfraedDevice, Light):
         if ATTR_COLOR_TEMP in kwargs:
             color_temp = colorutil.color_temperature_mired_to_kelvin(
                 kwargs[ATTR_COLOR_TEMP])
-            print("color_temp",color_temp)
             self.infraed.set_color_temp(color_temp)
         time.sleep(2)
-        print("turn_on state:", self.state)
         self.async_schedule_update_ha_state()
 
     def turn_off(self, **kwargs):
         """Instruct the light to turn off."""
-
-        nowTime = datetime.datetime.now()
-        logger_obj.warning("beging turn_on light time is"+str(nowTime))
         self.infraed.turn_off()
         time.sleep(2)
-        print("turn_off state:", self.state)
         self.async_schedule_update_ha_state()
 
     @property
