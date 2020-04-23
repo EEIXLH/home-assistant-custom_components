@@ -16,18 +16,17 @@ from .constant import (BRIGHTNESS_INCREASE_ACTION,BRIGHTNESS_INCREASE_KEYID,BRIG
 COLOR_TEMPERATURE_KEYID,COLOR_TEMPERATURE_ACTION,CLR_TEMP_DECREASE_KEYID,CLR_TEMP_DECREASE_ACTION,CLR_TEMP_INCREASE_KEYID,CLR_TEMP_INCREASE_ACTION,
 
 )
-
+import os
 from .log import logger_obj
 from .constant import SWITCH_MODEL,LIGHT_MODEL,MEDIA_PLAYER_MODEL,MEDIA_PLAYER_MODEL
 from .learnCode import learn_code,stop_learn
-from .sendCode import send_code
 from .judgeProcess import judgeprocess
 DOMAIN = 'infraed_huihe'
 DATA_INFREAD = 'data_infraed'
 processname="mode2"
 SIGNAL_DELETE_ENTITY = 'infraed_delete'
 SIGNAL_UPDATE_ENTITY = 'infraed_update'
-
+liecd_Path = 'demo.lircd.conf'
 SERVICE_FORCE_UPDATE = 'force_update'
 SERVICE_PULL_DEVICES = 'pull_devices'
 
@@ -100,7 +99,7 @@ SERVICE_DELETE_DEVICE= vol.Schema({
 def setup(hass, config):
     """Set up ifuturehome Component."""
     from .infraedapi import InfraedApi
-    infraed = InfraedApi()
+    infraed = InfraedApi(hass)
     hass.data[DATA_INFREAD] = infraed
     infraed.init(hass)
     hass.data[DOMAIN] = {
@@ -261,7 +260,8 @@ def setup(hass, config):
         params = service.data.copy()
         codeList=params["pulse"]
         code=codeList.split(",")
-        send_code(code)
+
+        infraed.send_code(code)
 
     hass.services.register(DOMAIN, 'send_learning_code', send_learning_code, schema=SERVICE_SEND_LEARNING_CODE)
 

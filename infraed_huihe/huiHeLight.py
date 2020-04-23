@@ -23,50 +23,23 @@ class HuiHeLight(InfraedDevice):
 
     def set_brightness(self, brightness):
             pass
-        #self.data['brightness'] = brightness
-
 
     def support_color(self):
         return True
 
-        # if self.data.get('color') is None:
-        #     return False
-        # else:
-        #     return True
 
 
     def support_color_temp(self):
 
         return True
-        # if self.dev_type=="0001-0201-0001":
-        #     return False
-        # else:
-        #     if self.data.get('color_temp') is None:
-        #
-        #         return False
-        #     else:
-        #         return True
 
 
     def hs_color(self):
         pass
-        # if self.data.get('color') is None:
-        #     return None
-        # else:
-        #     work_mode = self.data.get('color_mode')
-        #     if work_mode == 'colour':
-        #         color = self.data.get('color')
-        #         return color.get('hue'), color.get('saturation')
-        #     else:
-        #         return 0.0, 0.0
 
 
     def color_temp(self):
         pass
-        # if self.data.get('color_temp') is None:
-        #     return None
-        # else:
-        #     return self.data.get('color_temp')
 
 
     def min_color_temp(self):

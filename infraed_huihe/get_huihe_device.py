@@ -1,5 +1,5 @@
 from .HuiHeLight import HuiHeLight
-from .huiHeSwitch import HuiHeSwitch
+from .HuiHeSwitch import HuiHeSwitch
 from .HuiHeClimate import HuiHeClimate
 from .HuiHeMediaPlayer import HuiHeMediaPlayer
 from .HuiHeFan import HuiHeFanDevice

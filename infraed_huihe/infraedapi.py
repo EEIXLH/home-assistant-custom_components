@@ -1,18 +1,20 @@
 # -*- coding:utf-8 -*-
-
+import os, time
+#from py_irsend import irsend
+from .log import logger_obj
 from .get_huihe_device  import get_huihe_device
 import sqlite3
 from .deviceDB import createTable,insertOneDevice,selectAll,selectCodeByEndpointId,deleteOneDevice,updateCodeListByEndpointId
-from .sendCode import send_code
 from .log import logger_obj
-db_path = '.homeassistant/irdevices.db'
+liecd_Path = 'demo.lircd.conf'
+db_path = 'irdevices.db'
 AYLA_DEVICE_SERVER = "ads-field.aylanetworks.com"  # 美国开发环境
 APPID="huihe-d70b5148-field-us-id"
 APPSECRET="huihe-d70b5148-field-us-orxaM7xo-jcuYLzvMKNwofCv9NQ"
 TUYACLOUDURL = "https://px1.tuya{}.com"
 DEFAULTREGION = 'us'
 REFRESHTIME = 60 * 60 * 12
-
+copyCMD = ""
 class HuiHeSession:
 
     username = ''
@@ -31,11 +33,18 @@ SESSION = HuiHeSession()
 
 
 class InfraedApi():
+    def __init__(self,hass):
+        self.irdevicesdb_path = os.path.join(
+            hass.config.config_dir, db_path)
+
+        self.liecd_path = os.path.join(
+            hass.config.config_dir, liecd_Path)
 
 
     def init(self,hass):
         self.hass=hass
         self.discover_devices()
+
         return SESSION.devices
 
 
@@ -48,7 +57,7 @@ class InfraedApi():
         device_list=[]
         # 数据库文件是test.db
         # 如果文件不存在，会自动在当前目录创建:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(self.irdevicesdb_path)
         conn.text_factory = str
         # 创建一个Cursor:
         cursor = conn.cursor()
@@ -80,7 +89,7 @@ class InfraedApi():
     def add_new_device(self,device):
         logger_obj.info(" add_new_device：  %s",device)
 
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(self.irdevicesdb_path)
         conn.text_factory = str
         # 创建一个Cursor:
         cursor = conn.cursor()
@@ -109,7 +118,7 @@ class InfraedApi():
         number = num + 8
         device_id = dev_id[number:]
         logger_obj.info(" delete_device device_id：  %s", device_id)
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(self.irdevicesdb_path)
         conn.text_factory = str
         # 创建一个Cursor:
         cursor = conn.cursor()
@@ -139,7 +148,7 @@ class InfraedApi():
         else:
             device_id=endpointId
         logger_obj.info(" modify_device_code device_id：  %s", device_id)
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(self.irdevicesdb_path)
         conn.text_factory = str
         # 创建一个Cursor:
         cursor = conn.cursor()
@@ -194,7 +203,7 @@ class InfraedApi():
         code=""
         kfid=""
         codeList=[]
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(self.irdevicesdb_path)
         conn.text_factory = str
         # 创建一个Cursor:
         cursor = conn.cursor()
@@ -227,7 +236,7 @@ class InfraedApi():
         sendResponse = -1
         code,kfid=self.get_code(device_id,keyId)
         if code !=[]:
-            sendResponse=send_code(code)
+            sendResponse=self.send_code(code)
 
         if sendResponse == True:
 
@@ -247,7 +256,7 @@ class InfraedApi():
         code,kfid=self.get_code(device_id,acValue)
         if kfid=="-1":
             if code != []:
-                sendResponse=send_code(code)
+                sendResponse=self.send_code(code)
             else:
                 return False
         else:
@@ -255,7 +264,7 @@ class InfraedApi():
             device["key_id"]=acValue
 
             if code !=[]:
-                sendResponse=send_code(code)
+                sendResponse=self.send_code(code)
             else:
                 type="GetAcEvent"
                 data={
@@ -272,7 +281,7 @@ class InfraedApi():
 
                 if code!=None:
                     codeList = code.split(",")
-                    sendResponse=send_code(codeList)
+                    sendResponse=self.send_code(codeList)
                     device["pulse"]=code
                     self.modify_device_code(device)
                 else:
@@ -285,7 +294,74 @@ class InfraedApi():
 
             return False
 
+    def write_code_config(self,remoteName, buttonNameKey, codeList, liecd_path):
+        f = open(liecd_path, 'w')
+        f.write(
+            'begin remote' + '\n' + '\n' + '  name  ' + remoteName + '\n' + '  flags RAW_CODES' + '\n' + '  eps            30' + '\n' + '  aeps          100' + '\n' + '\n')
+        f.write('  gap          19991' + '\n' + '\n' + '      begin raw_codes' + '\n' + '\n')
+        f.write('          name ' + buttonNameKey + '\n')
+        timeCode = ""
+        i = 0
+        for code in codeList:
+            if code == '' or code == None or code == "":
+                pass
+            elif int(code) >= 30000:
+                pass
+            else:
+                i = i + 1
+                if "-" in str(code):
+                    pass
+                else:
+                    endCode = code
+                if i < 5:
+                    pass
+                else:
+                    i = 1
+                    f.write('\n')
+                f.write('      ' + str(endCode))
 
+        f.write('\n' + '\n' + "      end raw_codes" + '\n' + '\n' + "end remote")
+        f.close()
+        os.system('sudo cp  .homeassistant/demo.lircd.conf  /etc/lirc/lircd.conf.d')
+        return
+
+    def send_code(self,codeList) :
+
+        logger_obj.info("send_code codeList ：%s", codeList)
+        remoteName = 'demo'
+        buttonNameKey = "on"
+        sendResponse = 0
+        self.write_code_config(remoteName, buttonNameKey, codeList, self.liecd_path )
+        restartResponse = os.system('sudo service lircd restart')
+        logger_obj.info("restartResponse  ：%s", restartResponse)
+        if restartResponse != 0:
+            logger_obj.info("sudo service lircd restart is erro")
+            return False
+        else:
+            time.sleep(0.3)
+
+            try:
+                logger_obj.info("irsend SEND_ONCE demo on 1")
+                sendResponse = os.system('irsend SEND_ONCE demo on')
+                # irsend.send_once(remoteName, [buttonNameKey])
+
+            except:
+                try:
+                    logger_obj.info("irsend SEND_ONCE demo on 2")
+                    os.system('sudo service lircd restart')
+                    time.sleep(0.5)
+                    sendResponse = os.system('irsend SEND_ONCE demo on')
+                    # irsend.send_once(remoteName, [buttonNameKey])
+                except:
+                    logger_obj.info("send_code is err 2")
+                    return False
+
+        if sendResponse == 0:
+
+            return True
+        else:
+
+            return False
 
 
 class iFutureHomeAPIException(Exception):

@@ -2,7 +2,6 @@ from .constant import SWITCH_MODEL,LIGHT_MODEL,CLIMATE_MODEL,MEDIA_PLAYER_MODEL,
 
 class InfraedDevice(object):
     def __init__(self, device_info, api):
-
         self.api = api
         self.data = {}
         self.device_info = device_info
